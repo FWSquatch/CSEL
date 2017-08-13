@@ -12,3 +12,5 @@ So far, it can award points for:
 - Deleting unauthorized files
 - Running updates (kinda)
 - Answering a forensic question
+
+It can be run with or without "Silent Misses" depending upon how hard you want to make it on your students. Actual CP images are always silent misses, but if you are just starting out it helps to have the misses turned on. This will tell your student what category is missing points, but it won't tell them exactly what is missing.
