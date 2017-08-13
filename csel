@@ -1,19 +1,23 @@
 #!/bin/bash
 #CSEL Cyberpatriot Scoring Engine: Linux
 imageScore=0
-silentMiss="n" # y for silent misses, n will tell students where points are missing
+silentMiss="y" # y for silent misses, n will tell students where points are missing
+
+newUser=(kelly) #Users to be added to the system
 goodUser=(josh jose leon) #10 points each
 blankPassword=(jose josh) #5 points each
 badUser=(fred greg) #10 points each
 goodServices=(apache2 ssh fakeservice2) #7 points each
-badServices=(john telnet fakeservice mdadm) #7 points each
+badServices=(john telnet mdadm) #7 points each
 badFiles=(/home/josh/media.file /etc/apt/sources.list) #10 points
 kernelName="4.4.0-89-generic"
 forensicAnswer='<ANSWER>: Good Gravy' #10 points
 
 #Bash text color shortcuts
-YELLOW='\033[0;33m'
 RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 drawHead(){
@@ -28,7 +32,7 @@ echo "|"
 echo -e "${YELLOW}#######################################################${NC}"
 echo ""
 echo ""
-echo "Your score is: " $imageScore
+echo -e "${CYAN}Your score is:" $imageScore ${NC}
 echo ""
 echo ""
 }
@@ -36,19 +40,29 @@ userManagement(){
 echo "|"
 echo "| -----USER MANAGEMENT------"
 
-for i in "${goodUser[@]}" #Check for good users
+for i in "${newUser[@]}" #Check for new users
 do
 	if getent passwd $i > /dev/null 2>&1; then
-		echo "| User" $i "exists. (10 points)"
+		echo -e "| ${GREEN}User" $i "exists. (10 points)${NC}"
 		imageScore=$[$imageScore+10]
 		else
-			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Good User${NC}";fi
+			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS New User${NC}";fi
+	fi
+done
+
+for i in "${goodUser[@]}" #Penalize for deleting good users
+do
+	if getent passwd $i > /dev/null 2>&1; then
+		: #Do Nothing
+	else
+		echo -e "| ${RED}User" $i "deleted (-10 points){NC}"
+			imageScore=$[$imageScore-10]
 	fi
 done
 
 if [ -z "$blankPassword" ] #Check certain users for blank passwords
 then
-	"NOPE"
+	: #Do nothing
 else
 	for i in "${blankPassword[@]}" #Check for blank passwords
 	do 
@@ -56,7 +70,7 @@ else
 		then
 			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Issue${NC}";fi
 		else
-			echo "| User" $i "no longer has a blank password (5 points)"
+			echo -e "| ${GREEN}User" $i "no longer has a blank password (5 points)${NC}"
 			imageScore=$[$imageScore+5]
 		fi
 	done
@@ -67,7 +81,7 @@ do
 	if getent passwd $j > /dev/null 2>&1; then
 		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad User not Deleted${NC}";fi
 	else
-		echo "| User" $j "deleted. (10 points)"
+		echo -e "| ${GREEN}User" $j "deleted. (10 points)${NC}"
 		imageScore=$[$imageScore+10]
 	fi
 done
@@ -81,7 +95,7 @@ do
 	serviceRunning=$(systemctl is-active $i | grep -c inactive)
 	if [ "$serviceRunning" -eq "0" ]
 	then
-		echo "| "$i" is running (7 points)"
+		echo -e "| ${GREEN}"$i" is running (7 points)${NC}"
 		imageScore=$[$imageScore+7]
 	else
 		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Good Service not Running";fi
@@ -96,7 +110,7 @@ do
 		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad Service not Removed${NC}";fi
 		
 	else
-		echo "| "$j" is not running (7 points)"
+		echo -e "| ${GREEN}"$j" is not running (7 points)${NC}"
 		imageScore=$[$imageScore+7]
 	fi
 done
@@ -111,7 +125,7 @@ do
 	then
 		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad File(s)${NC}";fi
 	else
-		echo "|" $i "deleted (10 points)"
+		echo -e "|" ${GREEN}$i "deleted (10 points)${NC}"
 		imageScore=$[$imageScore+10]
 	fi
 done
@@ -121,7 +135,7 @@ echo "|"
 echo "| -----UPDATES------"
 	if uname -r | grep -q $kernelName
 	then
-		echo "| Linux Kernel updates applied (10 points)"
+		echo -e "| ${GREEN}Linux Kernel updates applied (10 points)${NC}"
 		imageScore=$[$imageScore+10]
 	else
 		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
@@ -132,7 +146,7 @@ echo "|"
 echo "| -----FORENSIC QUESTION------"
 if grep -q "$forensicAnswer" /home/josh/Question1.txt
 then 
-    echo "| Forensic Question answered (10 points)"
+    echo -e "| ${GREEN}Forensic Question answered (10 points)${NC}"
     imageScore=$[$imageScore+10]
 else
     if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Forensic Question${NC}";fi
