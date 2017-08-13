@@ -1,0 +1,149 @@
+#!/bin/bash
+#CSEL Cyberpatriot Scoring Engine: Linux
+imageScore=0
+silentMiss="n" # y for silent misses, n will tell students where points are missing
+goodUser=(josh jose leon) #10 points each
+blankPassword=(jose josh) #5 points each
+badUser=(fred greg) #10 points each
+goodServices=(apache2 ssh fakeservice2) #7 points each
+badServices=(john telnet fakeservice mdadm) #7 points each
+badFiles=(/home/josh/media.file /etc/apt/sources.list) #10 points
+kernelName="4.4.0-89-generic"
+forensicAnswer='<ANSWER>: Good Gravy' #10 points
+
+#Bash text color shortcuts
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+drawHead(){
+echo ""
+echo ""
+echo -e "${YELLOW}#######################################################"
+echo -e "#       CyberPatriot Linux Scoring Engine v 0.1       #"
+echo -e "#######################################################${NC}"
+}
+drawTail(){
+echo "|"
+echo -e "${YELLOW}#######################################################${NC}"
+echo ""
+echo ""
+echo "Your score is: " $imageScore
+echo ""
+echo ""
+}
+userManagement(){
+echo "|"
+echo "| -----USER MANAGEMENT------"
+
+for i in "${goodUser[@]}" #Check for good users
+do
+	if getent passwd $i > /dev/null 2>&1; then
+		echo "| User" $i "exists. (10 points)"
+		imageScore=$[$imageScore+10]
+		else
+			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Good User${NC}";fi
+	fi
+done
+
+if [ -z "$blankPassword" ] #Check certain users for blank passwords
+then
+	"NOPE"
+else
+	for i in "${blankPassword[@]}" #Check for blank passwords
+	do 
+		if [[ $(sudo getent shadow | grep $i\:\!\:) ]]
+		then
+			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Issue${NC}";fi
+		else
+			echo "| User" $i "no longer has a blank password (5 points)"
+			imageScore=$[$imageScore+5]
+		fi
+	done
+fi
+ 
+for j in "${badUser[@]}" #Check for bad users
+do
+	if getent passwd $j > /dev/null 2>&1; then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad User not Deleted${NC}";fi
+	else
+		echo "| User" $j "deleted. (10 points)"
+		imageScore=$[$imageScore+10]
+	fi
+done
+}
+checkServices(){
+echo "|"
+echo "| -----SERVICE MANAGEMENT------"
+
+for i in "${goodServices[@]}" #Check for good services
+do
+	serviceRunning=$(systemctl is-active $i | grep -c inactive)
+	if [ "$serviceRunning" -eq "0" ]
+	then
+		echo "| "$i" is running (7 points)"
+		imageScore=$[$imageScore+7]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Good Service not Running";fi
+	fi
+done
+
+for j in "${badServices[@]}" #Check for bad services
+do
+	serviceRunning=$(systemctl is-active $j | grep -c inactive)
+	if [ "$serviceRunning" -eq "0" ]
+	then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad Service not Removed${NC}";fi
+		
+	else
+		echo "| "$j" is not running (7 points)"
+		imageScore=$[$imageScore+7]
+	fi
+done
+}
+checkBadFiles(){
+echo "|"
+echo "| -----FILE MANAGEMENT------"
+
+for i in "${badFiles[@]}" #Check for bad files
+do 
+	if [ -e "$i" ]
+	then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad File(s)${NC}";fi
+	else
+		echo "|" $i "deleted (10 points)"
+		imageScore=$[$imageScore+10]
+	fi
+done
+}
+checkUpdate(){
+echo "|"
+echo "| -----UPDATES------"
+	if uname -r | grep -q $kernelName
+	then
+		echo "| Linux Kernel updates applied (10 points)"
+		imageScore=$[$imageScore+10]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
+	fi
+}
+checkForensicQuestion(){
+echo "|"
+echo "| -----FORENSIC QUESTION------"
+if grep -q "$forensicAnswer" /home/josh/Question1.txt
+then 
+    echo "| Forensic Question answered (10 points)"
+    imageScore=$[$imageScore+10]
+else
+    if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Forensic Question${NC}";fi
+fi
+}
+
+#Main body
+drawHead
+userManagement
+checkServices
+checkBadFiles
+checkUpdate
+checkForensicQuestion
+drawTail
