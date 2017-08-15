@@ -1,0 +1,77 @@
+#!/bin/bash
+#Bash text color shortcuts
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+imageScore=0
+showMiss=$1
+
+drawHead(){
+echo ""
+echo ""
+echo -e "${YELLOW}#######################################################"
+echo -e "#       CyberPatriot Linux Scoring Engine v 0.1       #"
+echo -e "#######################################################${NC}"
+}
+
+drawTail(){
+echo "|"
+echo -e "${YELLOW}#######################################################${NC}"
+echo ""
+echo ""
+echo -e "${CYAN}Your score is:" $imageScore ${NC}
+echo ""
+echo ""
+}
+
+badUser(){
+    if getent passwd $1 > /dev/null 2>&1; then
+        if [ "$showMiss" != "y" ]; then :; else echo -e "| ${CYAN}MISS Bad User Not Deleted${NC}";fi
+    else
+		echo -e "| ${GREEN}User" $1 "deleted. (10 points)${NC}"
+		#imageScore=$[$imageScore+10]
+    fi
+}
+
+goodUser(){
+    if getent passwd $1 > /dev/null 2>&1; then
+        : #Do Nothing
+    else
+        echo -e "| ${RED}User" $1 "deleted (-10 points)${NC}"
+        imageScore=$[$imageScore-10]
+    fi
+}
+
+badService(){
+	serviceRunning=$(systemctl is-active $1 | grep -c inactive)
+	if [ "$serviceRunning" -eq "0" ]
+	then
+		if [ "$showMiss" != "y" ]; then :; else echo -e "| ${CYAN}MISS Bad Service not Removed${NC}";fi
+		
+	else
+		echo -e "| ${GREEN}"$1" is not running (7 points)${NC}"
+		imageScore=$[$imageScore+7]
+	fi
+}
+
+goodService(){
+    serviceRunning=$(systemctl is-active $1 | grep -c inactive)
+	if [ "$serviceRunning" -eq "0" ]; then
+		echo -e "| ${GREEN}"$1" is running (7 points)${NC}"
+		imageScore=$[$imageScore+7]
+	else
+		if [ "$showMiss" != "y" ]; then :; else echo -e "| ${CYAN}MISS Good Service not Running${NC}";fi
+	fi
+}
+
+drawHead
+#open config file, read and execute it line by line
+cat config | while read line; do
+    line=( ${line//,/ } )
+    eval ${line[0]} ${line[1]}
+	imageScore=$?
+done
+drawTail
