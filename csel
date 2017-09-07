@@ -2,16 +2,20 @@
 #CSEL Cyberpatriot Scoring Engine: Linux
 imageScore=0
 silentMiss="y" # y for silent misses, n will tell students where points are missing
-
-newUser=(kelly) #Users to be added to the system
-goodUser=(josh jose leon) #10 points each
-blankPassword=(jose josh) #5 points each
-badUser=(fred greg) #10 points each
-goodServices=(apache2 ssh fakeservice2) #7 points each
-badServices=(john telnet mdadm) #7 points each
-badFiles=(/home/josh/media.file /etc/apt/sources.list) #10 points
+newUser=(kelly) #Users to be added to the system 10 points each
+goodUser=(hannibal face murchoch babaracus) #10 points each
+blankPassword=(face murchoch) #5 points each
+badUser=(decker) #10 points each
+goodServices=(ssh) #7 points each
+badServices=(apache2) #7 points each
+backdoor=(nc) # 10 points each
+badFiles=(/home/babaracus/media.mov /home/face/Music/JohnnyCash.mp3 /media/.startlisten.sh) #10 points
 kernelName="4.4.0-89-generic"
-forensicAnswer='<ANSWER>: Good Gravy' #10 points
+badPrograms=(john aircrack-ng)
+goodPrograms=(ufw)
+forensicAnswer='<ANSWER>: goldfordaysyo' #10 points
+changePassword=(face hannibal)
+initialImageDate="09/06/2017"
 
 #Bash text color shortcuts
 RED='\033[0;31m'
@@ -66,7 +70,7 @@ then
 else
 	for i in "${blankPassword[@]}" #Check for blank passwords
 	do 
-		if [[ $(sudo getent shadow | grep $i\:\!\:) ]]
+		if [[ $(sudo getent shadow | grep $i\:\:) ]]
 		then
 			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Issue${NC}";fi
 		else
@@ -113,6 +117,14 @@ do
 		echo -e "| ${GREEN}"$j" is not running (7 points)${NC}"
 		imageScore=$[$imageScore+7]
 	fi
+	if pgrep -x $backdoor > /dev/null
+	then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Backdoor not Removed${NC}";fi
+	else
+		echo -e "| ${GREEN}"$backdoor" backdoor is not running (10 points)${NC}"
+		imageScore=$[$imageScore+10]		
+	fi
+
 done
 }
 checkBadFiles(){
@@ -141,10 +153,38 @@ echo "| -----UPDATES------"
 		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
 	fi
 }
+checkGoodPrograms(){
+echo "|"
+echo "| -----PROGRAMS------"
+for j in "${goodPrograms[@]}" #Check for good programs
+do
+	if apt-cache policy $j | grep "Installed: (none)" > /dev/null
+	then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
+	else
+		echo -e "| ${GREEN}Program" $j "installed. (10 points)${NC}"		
+		imageScore=$[$imageScore+10]
+	fi
+done
+}
+checkBadPrograms(){
+echo "|"
+echo "| -----PROGRAMS------"
+for j in "${badPrograms[@]}" #Check for bad programs
+do
+	if apt-cache policy $j | grep "Installed: (none)" > /dev/null
+	then
+		echo -e "| ${GREEN}Program" $j "installed. (10 points)${NC}"		
+		imageScore=$[$imageScore+10]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
+	fi
+done
+}
 checkForensicQuestion(){
 echo "|"
 echo "| -----FORENSIC QUESTION------"
-if grep -q "$forensicAnswer" /home/josh/Question1.txt
+if grep -q "$forensicAnswer" /home/hannibal/Desktop/Question1.txt
 then 
     echo -e "| ${GREEN}Forensic Question answered (10 points)${NC}"
     imageScore=$[$imageScore+10]
@@ -153,11 +193,35 @@ else
 fi
 }
 
+checkPasswordAge(){
+for j in "${changePassword[@]}" #Check for changed passwords
+do
+	k=$(passwd -S $j | cut -d' ' -f3)
+	if [ $k  != $initialImageDate ]
+	then
+		echo -e "| "${GREEN}"User "$j "password has been changed. (5 points)${NC}"
+		imageScore=$[$imageScore+5]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Change${NC}";fi
+	fi
+done
+}
+checkForRoot(){
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+}
+
 #Main body
+checkForRoot
 drawHead
 userManagement
+checkPasswordAge
 checkServices
 checkBadFiles
-checkUpdate
+#checkUpdate
+checkBadPrograms
+checkGoodPrograms
 checkForensicQuestion
 drawTail
