@@ -1,8 +1,8 @@
 #!/bin/bash
 #CSEL Cyberpatriot Scoring Engine: Linux v 0.1
 #It's janky, but I'm just getting started. Right now the only way to configure the 
-#engine is to make changes to this top section. Future versions will streamiline this.
-#Most functions can take more than one argument. #Just separate them with spaces. 
+#engine is to make changes to this top section. Future versions will streamline this.
+#Most functions can take more than one argument. Just separate them with spaces. 
 #
 #Copy this script to the /usr/local/bin directory and chmod it to 777. Tell students
 #to type sudo csel at the terminal to score their image.
