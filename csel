@@ -2,7 +2,9 @@
 #Cyberpatriot Scoring Engine: Linux v 0.2
 #by Josh Davis
 #
-#Set up your scoring by changing the values in the Configuration setting
+#Set up your scoring by changing the values in the Configuration section
+#Change permissions to 777 and put this file in /usr/local/bin. Students
+#can check their score by typing "sudo csel" in a terminal window.
 #
 #################################################################
 #####---------------------Configuration---------------------#####
@@ -13,11 +15,18 @@ badUser=(bmacklin) #10 points for deleting bad users
 changePassword=(thaverford rswanson) #5 points for changing user password
 removeAdmin=(lknope) #10 points for removing bad admins
 disableGuest=(y) #y for 5 points for disabling guest account, n for no scoring
+disableAutoLogin=(y) #y for 5 points for disabling auto login, n for no scoring
+minPassAge=(1) #set to value of the min password age you want scored. Leave blank for no scoring
+maxPassAge=(30) #set to value of the max password age you want scored. Leave blank for no scoring
+maxLoginTries=(6) #set to value of the max login tries allowed. Leave blank for no scoring
 goodPrograms=(libpam-cracklib) #10 points for each good program installed
-badPrograms=(reaver) #10 points for each bad program uninstalled
-badFiles=(/home/thaverford/Music/MyJam.ogg) # 7 points for deleting each bad file
+badPrograms=(reaver vino openssh-server) #10 points for each bad program uninstalled
+badFiles=(/home/thaverford/Music/MyJam.ogg) # 7 points for deleting each bad files
 backdoor=() #10 points for removing backdoor. Enter the name of your backdoor (usually nc)
 checkHosts=(google) #enter a word from the line that you want removed from hosts file
+checkCronTab=(exporter.sh) #enter a word from the line in crontab that you want removed (currently only supports root)
+forensicsPath=(/home/lknope/Desktop/Question1.txt) #where is your forensics question?
+forensicsAnswer=(.bashrc) #answer to your forensics question (must be preceded by <ANSWER>: in your file)
 
 #####---------------------Configuration---------------------#####
 #################################################################
@@ -40,7 +49,7 @@ drawHead(){
 echo ""
 echo ""
 echo -e "${YELLOW}#######################################################"
-echo -e "#       CyberPatriot Linux Scoring Engine v 0.2       #"
+echo -e "#       CyberPatriot Scoring Engine: Linux v 0.2      #"
 echo -e "#######################################################${NC}"
 }
 drawTail(){
@@ -117,6 +126,55 @@ else
 	: #Do nothing
 fi
 }
+disableAutoLogin(){
+if [ "$disableAutoLogin" == "" ];then :; else
+	if [[ $(cat /etc/lightdm/lightdm.conf | grep ^autologin-user) ]]
+	then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Autologin Account Issues${NC}";fi
+
+	else
+		echo -e "| ${GREEN}Autologin disabled (5 points)${NC}"	
+		imageScore=$[$imageScore+5]
+		
+	fi
+fi
+}
+minPassAge(){
+if [ "$minPassAge" == "" ]; then :; else
+currentMin=$(sudo cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}')
+if (( "$currentMin" <= "$minPassAge" ))
+then
+	if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Policy Issue${NC}";fi	
+else
+	echo -e "| ${GREEN}Minimum Password age is at least "$minPassAge "(7 points)${NC}"		
+		imageScore=$[$imageScore+7]
+fi
+fi
+}
+maxPassAge(){
+if [ "$maxPassAge" == "" ]; then :; else
+currentMax=$(sudo cat /etc/login.defs | grep ^PASS_MAX_DAYS | awk '{print $2;}')
+if (( "$currentMax" <= "$maxPassAge" ))
+then
+	echo -e "| ${GREEN}Max Password age is at most "$maxPassAge "(7 points)${NC}"		
+		imageScore=$[$imageScore+7]
+else
+	if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Policy Issue${NC}";fi	
+fi
+fi
+}
+maxLoginTries(){
+if [ "$maxLoginTries" == "" ]; then :; else
+currentMax=$(sudo cat /etc/login.defs | grep ^LOGIN_RETRIES | awk '{print $2;}')
+if (( "$currentMax" <= "$maxLoginTries" ))
+then
+	echo -e "| ${GREEN}Max Login Tries is at most "$maxLoginTries "(7 points)${NC}"		
+		imageScore=$[$imageScore+7]
+else
+	if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Policy Issue${NC}";fi	
+fi
+fi
+}
 goodProgram(){
 for i in "${goodPrograms[@]}" #Check for good programs
 do
@@ -175,6 +233,31 @@ if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 		imageScore=$[$imageScore+7]
 fi
 }
+checkCronTab(){
+if [ "$checkCronTab" == "" ]; then :; else
+	for i in "${checkCronTab[@]}" 
+	do
+		if sudo crontab -l | grep $checkCronTab > /dev/null
+		then
+			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Crontab Issue${NC}";fi
+		else
+			echo -e "| ${GREEN}Bad cronjob removed (10 points)${NC}"
+			imageScore=$[$imageScore+10]
+		fi	
+	done
+fi
+}
+checkForensicsQuestion(){
+if [ "$forensicsAnswer" == "" ]; then :; else
+	if grep -q  "<ANSWER>: $forensicsAnswer" $forensicsPath
+	then
+			echo -e "| ${GREEN}Forensics Question answered CORRECT (10 points)${NC}"
+			imageScore=$[$imageScore+10]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Forensics Question is WRONG${NC}";fi
+	fi
+fi
+}
 #---------------------Categories---------------------#
 
 userManagement(){
@@ -184,9 +267,17 @@ goodUser
 badUser
 changePassword
 removeAdmin
-disableGuest
 }
 
+securityPolicies(){
+echo "|"
+echo "| -----SECURITY POLICIES------"
+disableGuest
+disableAutoLogin
+minPassAge
+maxPassAge
+maxLoginTries
+}
 programManagement(){
 echo "|"
 echo "| -----PROGRAMS------"
@@ -205,12 +296,15 @@ echo "|"
 echo "| -----MISCELLANEOUS------"
 backdoor
 checkHosts
+checkCronTab
+checkForensicsQuestion
 }
 
 #---------------------Main Loop---------------------#
 checkForRoot
 drawHead
 userManagement
+securityPolicies
 programManagement
 fileManagement
 miscPoints
