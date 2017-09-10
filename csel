@@ -9,22 +9,22 @@
 #################################################################
 #####---------------------Configuration---------------------#####
 
-silentMiss=(n) # y for silent misses, n will tell students generally where points are missing
+silentMiss=(y) # y for silent misses, n will tell students generally where points are missing
 goodUser=(lknope thaverford rswanson aludgate) #10 point penalty for deleting these users
 badUser=(bmacklin) #10 points for deleting bad users
 changePassword=(thaverford rswanson) #5 points for changing user password
-removeAdmin=(lknope) #10 points for removing bad admins
+removeAdmin=(adwyer) #10 points for removing bad admins
 disableGuest=(y) #y for 5 points for disabling guest account, n for no scoring
-disableAutoLogin=(y) #y for 5 points for disabling auto login, n for no scoring
-minPassAge=(1) #set to value of the min password age you want scored. Leave blank for no scoring
-maxPassAge=(30) #set to value of the max password age you want scored. Leave blank for no scoring
-maxLoginTries=(6) #set to value of the max login tries allowed. Leave blank for no scoring
+disableAutoLogin=(y) #y for 5 points for disabling auto login, n for no scoring. 7 pts
+minPassAge=(1) #set to value of the min password age you want scored. Leave blank for no scoring. 7 pts
+maxPassAge=(30) #set to value of the max password age you want scored. Leave blank for no scoring. 7pts
+maxLoginTries=(5) #set to value of the max login tries allowed. Leave blank for no scoring
 goodPrograms=(libpam-cracklib) #10 points for each good program installed
 badPrograms=(reaver vino openssh-server) #10 points for each bad program uninstalled
-badFiles=(/home/thaverford/Music/MyJam.ogg) # 7 points for deleting each bad files
+badFiles=(/home/thaverford/Music/MyJam.ogg /home/thaverford/Downloads/.E720.mp4.gz) # 7 points for deleting each bad files
 backdoor=() #10 points for removing backdoor. Enter the name of your backdoor (usually nc)
-checkHosts=(google) #enter a word from the line that you want removed from hosts file
-checkCronTab=(exporter.sh) #enter a word from the line in crontab that you want removed (currently only supports root)
+checkHosts=(google) #enter a word from the line that you want removed from hosts file. 7 pts
+checkCronTab=(exporter.sh) #enter a word from the line in crontab that you want removed (currently only supports root) 10 pts
 forensicsPath=(/home/lknope/Desktop/Question1.txt) #where is your forensics question?
 forensicsAnswer=(.bashrc) #answer to your forensics question (must be preceded by <ANSWER>: in your file)
 
@@ -142,7 +142,7 @@ fi
 minPassAge(){
 if [ "$minPassAge" == "" ]; then :; else
 currentMin=$(sudo cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}')
-if (( "$currentMin" <= "$minPassAge" ))
+if (( "$currentMin" < "$minPassAge" ))
 then
 	if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Policy Issue${NC}";fi	
 else
