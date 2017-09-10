@@ -1,30 +1,28 @@
 #!/bin/bash
-#CSEL Cyberpatriot Scoring Engine: Linux v 0.1
-#It's janky, but I'm just getting started. Right now the only way to configure the 
-#engine is to make changes to this top section. Future versions will streamline this.
-#Most functions can take more than one argument. Just separate them with spaces. 
+#Cyberpatriot Scoring Engine: Linux v 0.2
+#by Josh Davis
 #
-#Copy this script to the /usr/local/bin directory and chmod it to 777. Tell students
-#to type sudo csel at the terminal to score their image.
+#Set up your scoring by changing the values in the Configuration setting
+#
+#################################################################
+#####---------------------Configuration---------------------#####
 
-#Configuration Section
-silentMiss="y" # y for silent misses, n will tell students generally where points are missing
-newUser=(kelly) #Users to be added to the system 10 points each
-goodUser=(hannibal face murdock babaracus) #10 point penalty for deleting these users
-blankPassword=(face murdock) #5 points each for changing from blank password
-badUser=(decker) #10 points each
-goodServices=(ssh) #7 points each
-badServices=(apache2) #7 points each (This one needs work. It fails if they uninstall the program.)
-backdoor=(nc) #10 points each. 
-badFiles=(/home/babaracus/media.mov /home/face/Music/JohnnyCash.mp3 /media/.startlisten.sh) #10 points
-kernelName="4.4.0-89-generic" #scores when this specific kernel is detected (Thinking about changing how this works).
-badPrograms=(john aircrack-ng) #Scores when no longer installed on system
-goodPrograms=(ufw) #scores when installed
-forensicAnswer='<ANSWER>: goldfordaysyo' #10 points
-changePassword=(face hannibal) #Scores when these user passwords are changed
-initialImageDate="09/06/2017"  #This is used for changePassword. I'm looking for a better way to do this.
+silentMiss=(n) # y for silent misses, n will tell students generally where points are missing
+goodUser=(lknope thaverford rswanson aludgate) #10 point penalty for deleting these users
+badUser=(bmacklin) #10 points for deleting bad users
+changePassword=(thaverford rswanson) #5 points for changing user password
+removeAdmin=(lknope) #10 points for removing bad admins
+disableGuest=(y) #y for 5 points for disabling guest account, n for no scoring
+goodPrograms=(libpam-cracklib) #10 points for each good program installed
+badPrograms=(reaver) #10 points for each bad program uninstalled
+badFiles=(/home/thaverford/Music/MyJam.ogg) # 7 points for deleting each bad file
+backdoor=() #10 points for removing backdoor. Enter the name of your backdoor (usually nc)
+checkHosts=(google) #enter a word from the line that you want removed from hosts file
 
+#####---------------------Configuration---------------------#####
+#################################################################
 imageScore=0 #Start the score at zero
+
 #Bash text color shortcuts
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,11 +30,17 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+checkForRoot(){
+if [ "$EUID" -ne 0 ]
+  then echo "csel must be run as root"
+  exit
+fi
+}
 drawHead(){
 echo ""
 echo ""
 echo -e "${YELLOW}#######################################################"
-echo -e "#       CyberPatriot Linux Scoring Engine v 0.1       #"
+echo -e "#       CyberPatriot Linux Scoring Engine v 0.2       #"
 echo -e "#######################################################${NC}"
 }
 drawTail(){
@@ -48,97 +52,96 @@ echo -e "${CYAN}Your score is:" $imageScore ${NC}
 echo ""
 echo ""
 }
-userManagement(){
-echo "|"
-echo "| -----USER MANAGEMENT------"
-
-for i in "${newUser[@]}" #Check for new users
-do
-	if getent passwd $i > /dev/null 2>&1; then
-		echo -e "| ${GREEN}User" $i "exists. (10 points)${NC}"
-		imageScore=$[$imageScore+10]
-		else
-			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS New User${NC}";fi
-	fi
-done
-
+goodUser(){
 for i in "${goodUser[@]}" #Penalize for deleting good users
 do
 	if getent passwd $i > /dev/null 2>&1; then
 		: #Do Nothing
 	else
-		echo -e "| ${RED}User" $i "deleted (-10 points){NC}"
+		echo -e "| ${RED}User" $i "deleted (-10 points)${NC}"
 			imageScore=$[$imageScore-10]
 	fi
 done
-
-if [ -z "$blankPassword" ] #Check certain users for blank passwords
+}
+badUser(){
+for i in "${badUser[@]}" #Check for bad users
+do
+	if getent passwd $i > /dev/null 2>&1; then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad User not Deleted${NC}";fi
+	else
+		echo -e "| ${GREEN}User" $i "deleted. (10 points)${NC}"
+		imageScore=$[$imageScore+10]
+	fi
+done
+}
+changePassword(){
+if [ -z "$changePassword" ] #Check certain users for blank passwords
 then
 	: #Do nothing
 else
-	for i in "${blankPassword[@]}" #Check for blank passwords
+	for i in "${changePassword[@]}" #Check for blank passwords
 	do 
 		if [[ $(sudo getent shadow | grep $i\:\:) ]]
 		then
 			if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Issue${NC}";fi
 		else
-			echo -e "| ${GREEN}User" $i "no longer has a blank password (5 points)${NC}"
+			echo -e "| ${GREEN}User" $i "password has been changed (5 points)${NC}"
 			imageScore=$[$imageScore+5]
 		fi
 	done
 fi
- 
-for j in "${badUser[@]}" #Check for bad users
+}
+removeAdmin(){
+for i in "${removeAdmin[@]}" #Check certain uses to see if they have been removed from admin
 do
-	if getent passwd $j > /dev/null 2>&1; then
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad User not Deleted${NC}";fi
+	if [[ $(getent group sudo | grep $i) ]]  
+	then
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Admin Issue${NC}";fi	
 	else
-		echo -e "| ${GREEN}User" $j "deleted. (10 points)${NC}"
+		echo -e "| ${GREEN}User" $i "removed from Admin group (10 points)${NC}"	
 		imageScore=$[$imageScore+10]
 	fi
 done
 }
-checkServices(){
-echo "|"
-echo "| -----SERVICE MANAGEMENT------"
-
-for i in "${goodServices[@]}" #Check for good services
+disableGuest(){
+if [ "$disableGuest" == "y" ]
+then
+	if [[ $(cat /etc/lightdm/lightdm.conf | grep allow-guest=false) ]]
+	then
+		echo -e "| ${GREEN}Guest account disabled (5 points)${NC}"	
+		imageScore=$[$imageScore+5]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Guest Account Issues${NC}";fi
+	fi
+else
+	: #Do nothing
+fi
+}
+goodProgram(){
+for i in "${goodPrograms[@]}" #Check for good programs
 do
-	serviceRunning=$(systemctl is-active $i | grep -c inactive)
-	if [ "$serviceRunning" -eq "0" ]
+	if apt-cache policy $i | grep "Installed: (none)" > /dev/null
 	then
-		echo -e "| ${GREEN}"$i" is running (7 points)${NC}"
-		imageScore=$[$imageScore+7]
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Good Program(s) not installed${NC}";fi
 	else
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Good Service not Running";fi
+		echo -e "| ${GREEN}Program" $i "installed. (10 points)${NC}"		
+		imageScore=$[$imageScore+10]
 	fi
-done
-
-for j in "${badServices[@]}" #Check for bad services
-do
-	serviceRunning=$(systemctl is-active $j | grep -c inactive)
-	if [ "$serviceRunning" -eq "0" ]
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad Service not Removed${NC}";fi
-		
-	else
-		echo -e "| ${GREEN}"$j" is not running (7 points)${NC}"
-		imageScore=$[$imageScore+7]
-	fi
-	if pgrep -x $backdoor > /dev/null
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Backdoor not Removed${NC}";fi
-	else
-		echo -e "| ${GREEN}"$backdoor" backdoor is not running (10 points)${NC}"
-		imageScore=$[$imageScore+10]		
-	fi
-
 done
 }
-checkBadFiles(){
-echo "|"
-echo "| -----FILE MANAGEMENT------"
-
+badProgram(){
+for i in "${badPrograms[@]}" #Check for good programs
+do
+	if apt-cache policy $i | grep "Installed: (none)" > /dev/null
+	then
+		echo -e "| ${GREEN}Program" $i "uninstalled. (10 points)${NC}"		
+		imageScore=$[$imageScore+10]
+	else
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Bad program(s) installed${NC}";fi
+	fi
+done
+}
+badFile(){
 for i in "${badFiles[@]}" #Check for bad files
 do 
 	if [ -e "$i" ]
@@ -150,86 +153,65 @@ do
 	fi
 done
 }
-checkUpdate(){
-echo "|"
-echo "| -----UPDATES------"
-	if uname -r | grep -q $kernelName
-	then
-		echo -e "| ${GREEN}Linux Kernel updates applied (10 points)${NC}"
-		imageScore=$[$imageScore+10]
-	else
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
-	fi
-}
-checkGoodPrograms(){
-echo "|"
-echo "| -----PROGRAMS------"
-for j in "${goodPrograms[@]}" #Check for good programs
-do
-	if apt-cache policy $j | grep "Installed: (none)" > /dev/null
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
-	else
-		echo -e "| ${GREEN}Program" $j "installed. (10 points)${NC}"		
-		imageScore=$[$imageScore+10]
-	fi
-done
-}
-checkBadPrograms(){
-echo "|"
-echo "| -----PROGRAMS------"
-for j in "${badPrograms[@]}" #Check for bad programs
-do
-	if apt-cache policy $j | grep "Installed: (none)" > /dev/null
-	then
-		echo -e "| ${GREEN}Program" $j "installed. (10 points)${NC}"		
-		imageScore=$[$imageScore+10]
-	else
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Update(s)${NC}";fi
-	fi
-done
-}
-checkForensicQuestion(){
-echo "|"
-echo "| -----FORENSIC QUESTION------"
-if grep -q "$forensicAnswer" /home/hannibal/Desktop/Question1.txt
-then 
-    echo -e "| ${GREEN}Forensic Question answered (10 points)${NC}"
-    imageScore=$[$imageScore+10]
+
+backdoor(){
+if [ "$backdoor" == "" ]; then :; else
+if pgrep -x nc > /dev/null
+then
+	if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Backdoor not Removed${NC}";fi
 else
-    if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Forensic Question${NC}";fi
+	echo -e "| ${GREEN}"$backdoor" backdoor is not running (10 points)${NC}"
+	imageScore=$[$imageScore+10]		
+fi
 fi
 }
 
-checkPasswordAge(){
-for j in "${changePassword[@]}" #Check for changed passwords
-do
-	k=$(passwd -S $j | cut -d' ' -f3)
-	if [ $k  != $initialImageDate ]
+checkHosts(){
+if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 	then
-		echo -e "| "${GREEN}"User "$j "password has been changed. (5 points)${NC}"
-		imageScore=$[$imageScore+5]
+		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS hosts file issue${NC}";fi
 	else
-		if [ "$silentMiss" == "y" ]; then :; else echo -e "| ${RED}MISS Password Change${NC}";fi
-	fi
-done
-}
-checkForRoot(){
-if [ "$EUID" -ne 0 ]
-  then echo "Please run as root"
-  exit
+		echo -e "| ${GREEN}Hosts file corrected (7 points)${NC}"
+		imageScore=$[$imageScore+7]
 fi
 }
+#---------------------Categories---------------------#
 
-#Main body
+userManagement(){
+echo "|"
+echo "| -----USER MANAGEMENT------"
+goodUser
+badUser
+changePassword
+removeAdmin
+disableGuest
+}
+
+programManagement(){
+echo "|"
+echo "| -----PROGRAMS------"
+goodProgram
+badProgram
+}
+
+fileManagement(){
+echo "|"
+echo "| -----FILES------"
+badFile
+}
+
+miscPoints(){
+echo "|"
+echo "| -----MISCELLANEOUS------"
+backdoor
+checkHosts
+}
+
+#---------------------Main Loop---------------------#
 checkForRoot
 drawHead
 userManagement
-checkPasswordAge
-checkServices
-checkBadFiles
-checkUpdate
-checkBadPrograms
-checkGoodPrograms
-checkForensicQuestion
+programManagement
+fileManagement
+miscPoints
 drawTail
