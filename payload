@@ -10,7 +10,7 @@ fi
 
 drawHead(){
   echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
-  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore#</H2><hr>' >> $index
+  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore#</H2><hr>' >> $index
 }
 
 drawTail(){
@@ -28,6 +28,7 @@ do
 	fi
 done
 }
+
 badUser(){
 for i in "${badUser[@]}" #Check for bad users
 do
@@ -57,6 +58,7 @@ else
 	done
 fi
 }
+
 removeAdmin(){
 for i in "${removeAdmin[@]}" #Check certain uses to see if they have been removed from admin
 do
@@ -69,6 +71,7 @@ do
 	fi
 done
 }
+
 disableGuest(){
 if [ "$disableGuest" == "y" ]
 then
@@ -83,6 +86,7 @@ else
 	: #Do nothing
 fi
 }
+
 disableAutoLogin(){
 if [ "$disableAutoLogin" == "" ];then :; else
 	if [[ $(cat /etc/lightdm/lightdm.conf | grep ^autologin-user) ]]
@@ -96,6 +100,7 @@ if [ "$disableAutoLogin" == "" ];then :; else
 	fi
 fi
 }
+
 minPassAge(){
 if [ "$minPassAge" == "" ]; then :; else
 currentMin=$(cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}')
@@ -108,6 +113,7 @@ else
 fi
 fi
 }
+
 maxPassAge(){
 if [ "$maxPassAge" == "" ]; then :; else
 currentMax=$(cat /etc/login.defs | grep ^PASS_MAX_DAYS | awk '{print $2;}')
@@ -120,6 +126,7 @@ else
 fi
 fi
 }
+
 maxLoginTries(){
 if [ "$maxLoginTries" == "" ]; then :; else
 currentMax=$(cat /etc/login.defs | grep ^LOGIN_RETRIES | awk '{print $2;}')
@@ -132,6 +139,7 @@ else
 fi
 fi
 }
+
 goodProgram(){
 for i in "${goodPrograms[@]}" #Check for good programs
 do
@@ -144,6 +152,7 @@ do
 	fi
 done
 }
+
 badProgram(){
 for i in "${badPrograms[@]}" #Check for good programs
 do
@@ -156,6 +165,7 @@ do
 	fi
 done
 }
+
 badFile(){
 for i in "${badFiles[@]}" #Check for bad files
 do 
@@ -182,6 +192,7 @@ fi
 }
 
 checkHosts(){
+if [ "$checkHosts" == "" ]; then :; else
 if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 	then
 		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS hosts file issue</p>' >> $index;fi
@@ -191,6 +202,7 @@ if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 fi
 fi
 }
+
 checkCronTab(){
 if [ "$checkCronTab" == "" ]; then :; else
 	for i in "${checkCronTab[@]}" 
@@ -205,6 +217,7 @@ if [ "$checkCronTab" == "" ]; then :; else
 	done
 fi
 }
+
 checkForensicsQuestion(){
 if [ "$forensicsAnswer" == "" ]; then :; else
 	if grep -q  "ANSWER: $forensicsAnswer" $forensicsPath
@@ -216,6 +229,7 @@ if [ "$forensicsAnswer" == "" ]; then :; else
 	fi
 fi
 }
+
 #---------------------Categories---------------------#
 
 userManagement(){
