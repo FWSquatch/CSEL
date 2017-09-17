@@ -1,7 +1,7 @@
 # CSEL
 ## Cyberpatriot Scoring Engine: Linux
 
-CSEL is a scoring engine written in bash for scoring Linux CyberPatriot images. It is configured by adding scoring options into the csel file itself and is invoked from the terminal by typing `sudo csel`. It has been tested in Ubuntu 14.04 and 16.04.
+CSEL is a scoring engine written in bash for scoring Linux CyberPatriot images. It is configured by adding scoring options into the csel.cfg and now includes a web page Score Report. It has been tested in Ubuntu 14.04 and 16.04.
 
 ## Features
 CSEL is still a baby and it's rough around the edges, but so far it can score the following events:
@@ -28,12 +28,13 @@ CSEL can be run with "silent misses" which simulates a CyberPatriot round where 
 
 ## How to install
 1. Set up your image and put your vulnerabilities in place.
-2. Edit csel's configuration section (at the top of the file) to tell it what you would like to award points for.
-3. Use `chmod` to change csel's permissions: `sudo chmod 777 csel` (This may or may not be required since you are forced to use sudo anyway).
-4. Move csel to the `/usr/local/bin/` directory.
-5. Tell the students to check their score at any time by typing `sudo csel` in any terminal.
+2. Download the CSEL.zip to your image and unzip it.
+3. Edit csel.cfg to tell scoring engine what you would like to score.
+4. Run the installer by typing `sudo ./install` in the CSEL directory.
+5. Within 2 minutes you should see a ScoreReport.html file appear.
+6. After you are satisfied that it is working how you want, you can delete the CSEL directory.
 
-**Important Note**: Your students _will_ be able to see the vulnerabilities if they cat the file or open it with a text editor. I tell my students where the file is and that they should stay away from it. It is practice, after all.
+**Important Note**: Your students _will_ be able to see the vulnerabilities if you leave the CSEL folder behind or if they cat the executable file that is created in /usr/local/bin/. I tell my students where the file is and that they should stay away from it. It is practice, after all.
 
 ## Future Additions
 I would eventually like csel to be able to score as many events as the Windows scoring engine so I plan to keep adding new features as I get time. I'm not sure if I want to keep it in bash or rewrite it to some other language. I am definitely not a bash ninja and I feel like I have to trick it into doing what I want half of the time. 
