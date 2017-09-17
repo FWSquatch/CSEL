@@ -207,7 +207,7 @@ fi
 }
 checkForensicsQuestion(){
 if [ "$forensicsAnswer" == "" ]; then :; else
-	if grep -q  "<ANSWER>: $forensicsAnswer" $forensicsPath
+	if grep -q  "ANSWER: $forensicsAnswer" $forensicsPath
 	then
 			echo '<p style="color:green">Forensics Question answered CORRECT (10 points)</p>' >> $index
 			imageScore=$[$imageScore+10]
