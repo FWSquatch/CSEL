@@ -189,6 +189,7 @@ if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 		echo '<p style="color:green">Hosts file corrected (7 points)</p>' >> $index
 		imageScore=$[$imageScore+7]
 fi
+fi
 }
 checkCronTab(){
 if [ "$checkCronTab" == "" ]; then :; else
