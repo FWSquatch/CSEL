@@ -1,35 +1,49 @@
+#!/bin/bash
 #DO NOT MESS WITH THIS FILE#
 imageScore=0 #Start the score at zero
+release="" #Which version of Ubuntu are we dealing with?
+initialKernel=(4.4.0-31-generic) #This will change every time you run ./install.sh
 
-checkForRoot(){
+checkForRoot(){ #Gotta be root
 if [ "$EUID" -ne 0 ]
   then echo "csel must be run as root"
   exit
 fi
 }
 
-drawHead(){
-  echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
-  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore#</H2><hr>' >> $index
+checkRelease(){ #Check for version of Ubuntu
+if lsb_release -a | grep trusty > /dev/null
+  then
+    release="trusty"
+  else
+    release="xenial"
+fi
 }
 
-drawTail(){
+drawHead(){ #Create the Score Report html 
+  echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
+  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.3.1</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore#</H2><hr>' >> $index
+}
+
+drawTail(){ #Insert the score into the report
 sed -i "s/#TotalScore#/"$imageScore"/g" $index
 }
 
-goodUser(){	
-for i in "${goodUser[@]}" #Penalize for deleting good users
+goodUser(){	#Penalize for deleting good users
+if [ -z "$goodUser" ]; then :; else
+for i in "${goodUser[@]}" 
 do
-	if getent passwd $i > /dev/null 2>&1; then
-		: #Do Nothing
-	else
+	if getent passwd $i > /dev/null 2>&1; then :; else
 		echo '<p style="color:red">User ' $i 'deleted (-10 points)</p>' >> $index
 			imageScore=$[$imageScore-10]
 	fi
 done
+fi
 }
-badUser(){
-for i in "${badUser[@]}" #Check for bad users
+
+badUser(){ #Check for bad users
+if [ -z "$badUser" ]; then :; else
+for i in "${badUser[@]}" 
 do
 	if getent passwd $i > /dev/null 2>&1; then
 		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Bad User not Deleted' >> $index ;fi
@@ -38,13 +52,11 @@ do
 		imageScore=$[$imageScore+10]
 	fi
 done
+fi
 }
 
-changePassword(){
-if [ -z "$changePassword" ] #Check certain users for blank passwords
-then
-	: #Do nothing
-else
+changePassword(){ #Check certain users for blank passwords
+if [ -z "$changePassword" ]; then :; else
 	for i in "${changePassword[@]}" #Check for blank passwords
 	do 
 		if [[ $(getent shadow | grep $i\:\:) ]]
@@ -57,8 +69,10 @@ else
 	done
 fi
 }
-removeAdmin(){
-for i in "${removeAdmin[@]}" #Check certain uses to see if they have been removed from admin
+
+removeAdmin(){ #Check certain uses to see if they have been removed from admin
+if [ -z "$removeAdmin" ]; then :; else
+for i in "${removeAdmin[@]}" 
 do
 	if [[ $(getent group sudo | grep $i) ]]  
 	then
@@ -68,10 +82,11 @@ do
 		imageScore=$[$imageScore+10]
 	fi
 done
+fi
 }
-disableGuest(){
-if [ "$disableGuest" == "y" ]
-then
+
+disableGuest(){ #Is the Guest account disabled?
+if [ -z "$disableGuest" ]; then :; else
 	if [[ $(cat /etc/lightdm/lightdm.conf | grep allow-guest=false) ]]
 	then
 		echo '<p style="color:green">Guest account disabled (5 points)</p>' >> $index	
@@ -79,12 +94,11 @@ then
 	else
 		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Guest Account Issues</p>' >> $index;fi
 	fi
-else
-	: #Do nothing
 fi
 }
-disableAutoLogin(){
-if [ "$disableAutoLogin" == "" ];then :; else
+
+disableAutoLogin(){ #Is there an auto login account?
+if [ -z "$disableAutoLogin" ];then :; else
 	if [[ $(cat /etc/lightdm/lightdm.conf | grep ^autologin-user) ]]
 	then
 		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Autologin Account Issues</p>' >> $index;fi
@@ -96,8 +110,9 @@ if [ "$disableAutoLogin" == "" ];then :; else
 	fi
 fi
 }
-minPassAge(){
-if [ "$minPassAge" == "" ]; then :; else
+
+minPassAge(){ #Check minimum password age
+if [ -z "$minPassAge" ]; then :; else
 currentMin=$(cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}')
 if (( "$currentMin" < "$minPassAge" ))
 then
@@ -108,8 +123,9 @@ else
 fi
 fi
 }
-maxPassAge(){
-if [ "$maxPassAge" == "" ]; then :; else
+
+maxPassAge(){ #Check max password age
+if [ -z "$maxPassAge" ]; then :; else
 currentMax=$(cat /etc/login.defs | grep ^PASS_MAX_DAYS | awk '{print $2;}')
 if (( "$currentMax" <= "$maxPassAge" ))
 then
@@ -120,8 +136,9 @@ else
 fi
 fi
 }
-maxLoginTries(){
-if [ "$maxLoginTries" == "" ]; then :; else
+
+maxLoginTries(){ #Check max login threshold
+if [ -z "$maxLoginTries" ]; then :; else
 currentMax=$(cat /etc/login.defs | grep ^LOGIN_RETRIES | awk '{print $2;}')
 if (( "$currentMax" <= "$maxLoginTries" ))
 then
@@ -132,8 +149,20 @@ else
 fi
 fi
 }
-goodProgram(){
-for i in "${goodPrograms[@]}" #Check for good programs
+
+kernelUpdate(){ #Compare the kernel with the version in use when install.sh was last run
+if [[ `uname -r` == "$initialKernel" ]]
+  then
+if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Kernel Issue</p>' >> $index;fi	
+  else
+	echo '<p style="color:green">Kernel updated from '$initialKernel '(7 points)</p>' >> $index		
+		imageScore=$[$imageScore+7]
+fi
+}
+
+goodProgram(){ #Check for good programs
+if [ -z "$goodProgram" ]; then :; else
+for i in "${goodPrograms[@]}" 
 do
 	if apt-cache policy $i | grep "Installed: (none)" > /dev/null
 	then
@@ -143,9 +172,12 @@ do
 		imageScore=$[$imageScore+10]
 	fi
 done
+fi
 }
-badProgram(){
-for i in "${badPrograms[@]}" #Check for good programs
+
+badProgram(){ #Check for bad programs
+if [ -z "$badProgram" ]; then :; else
+for i in "${badPrograms[@]}" 
 do
 	if apt-cache policy $i | grep "Installed: (none)" > /dev/null
 	then
@@ -155,9 +187,12 @@ do
 		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Bad program(s) installed</p>' >> $index;fi
 	fi
 done
+fi
 }
-badFile(){
-for i in "${badFiles[@]}" #Check for bad files
+
+badFile(){ #Check for bad files
+if [ -z "$badFile" ]; then :; else
+for i in "${badFiles[@]}" 
 do 
 	if [ -e "$i" ]
 	then
@@ -167,10 +202,11 @@ do
 		imageScore=$[$imageScore+10]
 	fi
 done
+fi
 }
 
-backdoor(){
-if [ "$backdoor" == "" ]; then :; else
+backdoor(){ #Look for process running with the name $backdoor
+if [ -z "$backdoor" ]; then :; else
 if pgrep -x nc > /dev/null
 then
 	if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Backdoor not Removed</p>' >> $index ;fi
@@ -181,8 +217,8 @@ fi
 fi
 }
 
-checkHosts(){
-if [ "$checkHosts" == "" ]; then :; else
+checkHosts(){ #Check for certain words in the hosts file
+if [ -z "$checkHosts" ]; then :; else
 if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 	then
 		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS hosts file issue</p>' >> $index;fi
@@ -192,8 +228,9 @@ if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
 fi
 fi
 }
-checkCronTab(){
-if [ "$checkCronTab" == "" ]; then :; else
+
+checkCronTab(){ #Check for certain lines in the root crontab
+if [ -z "$checkCronTab" ]; then :; else
 	for i in "${checkCronTab[@]}" 
 	do
 		if crontab -l -u root | grep $checkCronTab > /dev/null
@@ -207,8 +244,8 @@ if [ "$checkCronTab" == "" ]; then :; else
 fi
 }
 
-checkFirewall(){
-if [ "$checkFirewall" == "" ]; then :; else
+checkFirewall(){ #Is ufw installed and enabled?
+if [ -z "$checkFirewall" ]; then :; else
 	if sudo ufw status | grep "Status: active" > /dev/null
 	then
 		echo '<p style="color:green">Firewall is active (10 points)</p>' >> $index
@@ -219,8 +256,8 @@ if [ "$checkFirewall" == "" ]; then :; else
 fi
 }
 
-checkForensicsQuestion(){
-if [ "$forensicsAnswer" == "" ]; then :; else
+checkForensicsQuestion(){ #Check for the correct answer in the forensics question
+if [ -z "$forensicsAnswer" ]; then :; else
 	if grep -q  "ANSWER: $forensicsAnswer" $forensicsPath
 	then
 			echo '<p style="color:green">Forensics Question answered CORRECT (10 points)</p>' >> $index
@@ -230,6 +267,7 @@ if [ "$forensicsAnswer" == "" ]; then :; else
 	fi
 fi
 }
+
 #---------------------Categories---------------------#
 
 userManagement(){
@@ -270,6 +308,7 @@ checkForensicsQuestion
 
 #---------------------Main Loop---------------------#
 checkForRoot
+checkRelease
 drawHead
 userManagement
 securityPolicies
