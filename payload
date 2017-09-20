@@ -2,7 +2,7 @@
 #DO NOT MESS WITH THIS FILE#
 imageScore=0 #Start the score at zero
 release="" #Which version of Ubuntu are we dealing with?
-initialKernel=(4.4.0-31-generic) #This will change every time you run ./install.sh
+initialKernel=(#KERNEL#) #This will change every time you run ./install.sh
 
 checkForRoot(){ #Gotta be root
 if [ "$EUID" -ne 0 ]
