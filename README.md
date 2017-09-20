@@ -1,7 +1,7 @@
 # CSEL
 ## Cyberpatriot Scoring Engine: Linux
 
-CSEL is a scoring engine written in bash for scoring Linux CyberPatriot images. It is configured by adding scoring options into the csel.cfg and now includes a web page Score Report. It has been tested in Ubuntu 14.04 and 16.04.
+CSEL is a scoring engine written in bash for scoring Linux CyberPatriot images. It is configured by adding scoring options into the csel.cfg and running the install file. It now includes a web page Score Report. It has been tested in Ubuntu 16.04 and I'm working on getting it compatible with 14.04.
 
 ## Features
 CSEL is still a baby and it's rough around the edges, but so far it can score the following events:
@@ -18,6 +18,7 @@ CSEL is still a baby and it's rough around the edges, but so far it can score th
 - Deleting prohibited files
 - Removing backdoors
 - Configuring the hosts files
+- Updating the kernel
 - Removing things from the crontab (needs improvement--can only do this for root right now)
 - Answering the forensics question correctly
 
