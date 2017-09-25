@@ -192,7 +192,7 @@ fi
 
 badFile(){ #Check for bad files
 if [ -z "$badFile" ]; then :; else
-for i in "${badFiles[@]}" 
+for i in "${badFile[@]}" 
 do 
 	if [ -e "$i" ]
 	then
@@ -244,6 +244,19 @@ if [ -z "$checkCronTab" ]; then :; else
 fi
 }
 
+checkSudoers(){ #Check for unwanted words in sudoers file
+if [ -z "$checkFirewall" ]; then :; else
+  for i in "${checkSudoers[@]}"
+  do
+    if cat /etc/sudoers | grep $checkSudoers > /dev/null
+    then
+      if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS sudoers Issue</p>' >> $index;fi
+    else
+      echo '<p style="color:green">Sudoers file secured (7 points)</p>' >> $index
+      imageScore=$[$imageScore+7]    
+  done
+fi
+}
 checkFirewall(){ #Is ufw installed and enabled?
 if [ -z "$checkFirewall" ]; then :; else
 	if sudo ufw status | grep "Status: active" > /dev/null
