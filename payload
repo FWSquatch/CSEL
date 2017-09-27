@@ -3,16 +3,166 @@
 imageScore=0 #Start the score at zero
 posPoints=0 #Start with zero possible points
 release="" #Which version of Ubuntu are we dealing with?
-initialKernel=(#KERNEL#) #This will change every time you run ./install.sh
+initialKernel=(%KERNEL%) #This will change every time you run ./install.sh
 
-checkForRoot(){ #Gotta be root
-if [ "$EUID" -ne 0 ]
-  then echo "csel must be run as root"
-  exit
+addPosPoints(){ #Use: posPoints <Number of possible points being added>
+posPoints=$[$posPoints + $1]
+}
+
+addScore(){ #Add points to your total score
+imageScore=$[$imageScore + $1]
+}
+
+badFile(){ #Check for bad files
+if [ -z "$badFile" ]; then :; else addPosPoints ${#badFile[@]}*10
+for i in "${badFile[@]}" ; do 
+  if [ -e "$i" ] ; then
+    recordMiss 'File management '
+  else
+    recordHit 'File '$i' deleted.' 10
+  fi
+done
 fi
 }
 
-checkRelease(){ #Check for version of Ubuntu
+badProgram(){ #Check for bad programs
+if [ -z "$badProgram" ]; then :; else addPosPoints ${#badProgram[@]}*10
+for i in "${badProgram[@]}" ; do
+  if apt-cache policy $i | grep "Installed: (none)" > /dev/null ; then
+    recordHit 'Program '$i' uninstalled.' 10
+  else
+    recordMiss 'Bad program management '
+  fi
+done
+fi
+}
+
+badUser(){ #Check for bad users
+if [ -z "$badUser" ]; then :; else addPosPoints ${#badUser[@]}*10
+for i in "${badUser[@]}" ; do
+  if getent passwd $i > /dev/null 2>&1; then
+    recordMiss "User management "
+  else
+    recordHit $i" has been deleted." 10
+  fi
+done
+fi
+}
+
+backdoor(){ #Look for process running with the name $backdoor
+if [ -z "$backdoor" ]; then :; else addPosPoints ${#backdoor[@]}*10
+for i in "${backdoor[@]}" ; do
+  if pgrep -x $i > /dev/null ; then
+    recordMiss 'Backdoor '
+  else
+    recordHit 'Backdoor '$i' removed.' 10
+  fi
+done
+fi
+} 
+
+changePassword(){ #Check certain users for blank passwords
+if [ -z "$changePassword" ]; then :; else addPosPoints ${#changePassword[@]}*5
+  for i in "${changePassword[@]}" ; do #Check for blank passwords
+    if [[ $(getent shadow | grep $i\:\:) ]] ; then
+      recordMiss Password
+    else
+      recordHit 'User '$i' password has been changed.' 5
+    fi
+  done
+fi
+}
+
+checkCronTab(){ #Check for certain lines in the root crontab
+if [ -z "$checkCronTab" ]; then :; else addPosPoints ${#checkCronTab[@]}*10
+for i in "${checkCronTab[@]}" ;	do
+  if crontab -l -u root | grep $i > /dev/null ; then
+    recordMiss 'Crontab '
+  else
+	recordHit $i' removed from crontab.' 10
+  fi	
+done
+fi
+}
+
+checkFirewall(){ #Is ufw installed and enabled?
+if [ -z "$checkFirewall" ]; then :; else addPosPoints 10
+  if sudo ufw status | grep "Status: active" > /dev/null ; then
+    recordHit 'Firewall enabled.' 10
+  else
+	recordMiss 'Firewall '
+  fi
+fi
+}
+
+checkForensicsQuestion(){ #Check for the correct answer in the forensics question
+if [ -z "$forensicsAnswer" ]; then :; else addPosPoints ${#forensicsAnswer[@]}*10
+  if grep -q  "ANSWER: $forensicsAnswer" $forensicsPath ; then
+    recordHit 'Forensics Question correct.' 10
+  else
+	recordMiss 'Forensics Question '
+  fi
+fi
+}
+
+checkForRoot(){ #Gotta be root
+if [ "$EUID" -ne 0 ] ;  then 
+echo "csel must be run as root"
+exit
+fi
+}
+
+checkHosts(){ #Check for certain words in the hosts file
+if [ -z "$checkHosts" ]; then :; else addPosPoints ${#checkHosts[@]}*7
+for i in "${checkHosts[@]}" ; do
+  if [[ `grep $checkHosts /etc/hosts` ]] ; then
+    recordMiss 'Hosts file '
+  else
+    recordHit $i' removed from hosts file.' 7
+  fi
+done
+fi
+}
+
+checkPassHist(){ #Check /etc/pam.d/common-password for password history
+if [ -z "$checkPassHist" ]; then :; else addPosPoints 7 
+  if [[ `grep remember /etc/pam.d/common-password` ]] ; then #does remember exist in the file?
+    if [ `grep -o -P '(?<=remember=).*(?=\ )' /etc/pam.d/common-password` ] ; then #Check for value somewhere in the middle of the line
+      currentPassHist=$(grep -oP '(?<=remember=).*(?=\ )' /etc/pam.d/common-password )
+    else #If it's not in the middle, it must be at the end of the line
+    currentPassHist=$(grep -oPz '(?<=remember=)(.*\n)' /etc/pam.d/common-password )
+    fi
+    if (( "$currentPassHist" >= "$checkPassHist" )) ; then #Compare the current setting with the desired setting
+      recordHit "Password History is at least "$checkPassHist"."  7
+    else
+      recordMiss "Password Policy"
+    fi
+  else #NO it does not exist
+    recordMiss "Password Policy"
+  fi
+fi
+}
+
+checkPassLength(){ #Check /etc/pam.d/common-password for min length
+if [ -z "$checkPassLength" ]; then :; else addPosPoints 7 
+  if [[ `grep minlen /etc/pam.d/common-password` ]] ; then #does remember exist in the file?
+    if [ `grep -o -P '(?<=minlen=).*(?=\ )' /etc/pam.d/common-password` ] ; then #Check for value somewhere in the middle of the line
+      currentPassLength=$(grep -oP '(?<=minlen=).*(?=\ )' /etc/pam.d/common-password )
+    else #If it's not in the middle, it must be at the end of the line
+    currentPassLength=$(grep -oPz '(?<=minlen=)(.*\n)' /etc/pam.d/common-password )
+    fi
+    if (( "$currentPassLength" >= "$checkPassLength" )) ; then #Compare the current setting with the desired setting
+      recordHit "Password Length is at least "$checkPassLength"."  7
+    else
+      recordMiss "Password Policy"
+    fi
+  else #NO it does not exist
+    recordMiss "Password Policy"
+  fi
+fi
+}
+
+checkRelease(){ #Check for version of Ubuntu (not implemented yet)
 if lsb_release -a | grep trusty > /dev/null
   then
     release="trusty"
@@ -21,268 +171,129 @@ if lsb_release -a | grep trusty > /dev/null
 fi
 }
 
+disableAutoLogin(){ #Check /etc/lightdm/lightdm.conf for an auto login account?
+if [ -z "$disableAutoLogin" ];then :; else addPosPoints 5
+  if [[ $(cat /etc/lightdm/lightdm.conf | grep ^autologin-user) ]] ; then
+    recordMiss 'Auto login'
+  else
+	recordHit 'Autologin disabled.' 5
+  fi
+fi
+}
+
+disableGuest(){ #Check /etc/lightdm/lightdm.conf is the Guest account disabled?
+if [ -z "$disableGuest" ]; then :; else addPosPoints 5
+  if [[ $(cat /etc/lightdm/lightdm.conf | grep allow-guest=false) ]] ; then
+    recordHit 'Guest account disabled.' 5
+  else
+	  recordMiss 'Guest account'
+  fi
+fi
+}
+
 drawHead(){ #Create the Score Report html 
   echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
   echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.3.1</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
 }
 
-drawTail(){ #Insert the score into the report
+drawTail(){ #Finish up report (insert score and possible points)
 sed -i "s/#TotalScore#/"$imageScore"/g" $index
 sed -i "s/#PossiblePoints#/"$posPoints"/g" $index
 
 }
 
-goodUser(){	#Penalize for deleting good users
-if [ -z "$goodUser" ]; then :; else 
-for i in "${goodUser[@]}" 
-do
-	if getent passwd $i > /dev/null 2>&1; then :; else
-		echo '<p style="color:red">User ' $i 'deleted (-10 points)</p>' >> $index
-			imageScore=$[$imageScore-10]
-	fi
-done
-fi
-}
-
-badUser(){ #Check for bad users
-if [ -z "$badUser" ]; then :; else posPoints=$[$posPoints+(${#badUser[@]} * 10)]
-for i in "${badUser[@]}" 
-do
-	if getent passwd $i > /dev/null 2>&1; then
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Bad User not Deleted' >> $index ;fi
-	else
-		echo '<p style="color:green">User' $i 'deleted. (10 points)' >> $index
-		imageScore=$[$imageScore+10]
-	fi
-done
-fi
-}
-
-changePassword(){ #Check certain users for blank passwords
-if [ -z "$changePassword" ]; then :; else posPoints=$[$posPoints+(${#changePassword[@]} * 5)]
-	for i in "${changePassword[@]}" #Check for blank passwords
-	do 
-		if [[ $(getent shadow | grep $i\:\:) ]]
-		then
-			if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Password Issue</p>' >> $index;fi
-		else
-			echo '<p style="color:green">User' $i 'password has been changed (5 points)' >> $index
-			imageScore=$[$imageScore+5]
-		fi
-	done
-fi
-}
-
-removeAdmin(){ #Check certain uses to see if they have been removed from admin
-if [ -z "$removeAdmin" ]; then :; else posPoints=$[$posPoints+(${#removeAdmin[@]} * 10)]
-for i in "${removeAdmin[@]}" 
-do
-	if [[ $(getent group sudo | grep $i) ]]  
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Admin Issue</p>' >> $index ;fi	
-	else
-		echo '<p style="color:green">User' $i 'removed from Admin group (10 points)</p>' >> $index	
-		imageScore=$[$imageScore+10]
-	fi
-done
-fi
-}
-
-secureSudoers(){
-if [ -z "$secureSudoers" ]; then :; else  posPoints=$[$posPoints+(${#secureSudoers[@]} * 8)]
-for i in "${secureSudoers[@]}"
-do
-  if [[ $(sudo cat /etc/sudoers | grep $i) ]]
-  then
-    if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Sudoers Issue</p>' >> $index ;fi
+goodProgram(){ #Check for good programs
+if [ -z "$goodProgram" ]; then :; else addPosPoints ${#goodProgram[@]}*10
+for i in "${goodProgram[@]}" ; do
+  if apt-cache policy $i | grep "Installed: (none)" > /dev/null ; then
+    recordMiss 'Good program management '
   else
-    echo '<p style="color:green">/etc/sudoers file secured (8 points)</p>' >> $index	
-    imageScore=$[$imageScore+8]
+	recordHit 'Program '$i' installed.' 10
   fi
 done
 fi
 }
 
-disableGuest(){ #Is the Guest account disabled?
-if [ -z "$disableGuest" ]; then :; else posPoints=$[$posPoints+(${#disableGuest[@]} * 5)]
-	if [[ $(cat /etc/lightdm/lightdm.conf | grep allow-guest=false) ]]
-	then
-		echo '<p style="color:green">Guest account disabled (5 points)</p>' >> $index	
-		imageScore=$[$imageScore+5]
-	else
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Guest Account Issues</p>' >> $index;fi
-	fi
-fi
-}
-
-disableAutoLogin(){ #Is there an auto login account?
-if [ -z "$disableAutoLogin" ];then :; else posPoints=$[$posPoints+(${#disableAutoLogin[@]} * 5)]
-	if [[ $(cat /etc/lightdm/lightdm.conf | grep ^autologin-user) ]]
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Autologin Account Issues</p>' >> $index;fi
-
-	else
-		echo '<p style="color:green">Autologin disabled (5 points)</p>' >> $index	
-		imageScore=$[$imageScore+5]
-		
-	fi
-fi
-}
-
-minPassAge(){ #Check minimum password age
-if [ -z "$minPassAge" ]; then :; else posPoints=$[$posPoints+(${#minPassAge[@]} * 7)]
-currentMin=$(cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}')
-if (( "$currentMin" < "$minPassAge" ))
-then
-	if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Password Policy Issue</p>' >> $index;fi	
-else
-	echo '<p style="color:green">Minimum Password age is at least '$minPassAge '(7 points)</p>' >> $index
-		imageScore=$[$imageScore+7]
-fi
-fi
-}
-
-maxPassAge(){ #Check max password age
-if [ -z "$maxPassAge" ]; then :; else posPoints=$[$posPoints+(${#maxPassAge[@]} * 7)]
-currentMax=$(cat /etc/login.defs | grep ^PASS_MAX_DAYS | awk '{print $2;}')
-if (( "$currentMax" <= "$maxPassAge" ))
-then
-	echo '<p style="color:green">Max Password age is at most '$maxPassAge '(7 points)</p>' >> $index		
-		imageScore=$[$imageScore+7]
-else
-	if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Password Policy Issue</p>' >> $index ;fi	
-fi
+goodUser(){	#Penalize for deleting good users
+if [ -z "$goodUser" ]; then :; else 
+for i in "${goodUser[@]}" ; do
+  if getent passwd $i > /dev/null 2>&1; then :; else #If goodUser exists, do nothing, else penalize
+    recordPenalty "User "$i" deleted" -10		
+  fi
+done
 fi
 }
 
 maxLoginTries(){ #Check max login threshold
-if [ -z "$maxLoginTries" ]; then :; else posPoints=$[$posPoints+(${#maxLoginTries[@]} * 7)]
-currentMax=$(cat /etc/login.defs | grep ^LOGIN_RETRIES | awk '{print $2;}')
-if (( "$currentMax" <= "$maxLoginTries" ))
-then
-	echo '<p style="color:green">Max Login Tries is at least '$maxLoginTries '(7 points)</p>' >> $index		
-		imageScore=$[$imageScore+7]
-else
-	if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Password Policy Issue</p>' >> $index;fi	
-fi
-fi
-}
-
-kernelUpdate(){ #Compare the kernel with the version in use when install.sh was last run
-if [[ `uname -r` == "$initialKernel" ]]
-  then  posPoints=$[$posPoints+(${#badUser[@]} * 7)]
-if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Kernel Issue</p>' >> $index;fi	
+if [ -z "$maxLoginTries" ]; then :; else addPosPoints 7
+currentMax=$(cat /etc/login.defs | grep ^LOGIN_RETRIES | awk '{print $2;}') #Look at login.defs
+  if (( "$currentMax" <= "$maxLoginTries" )) ; then
+    recordHit 'Max Login Tries is at least '$maxLoginTries'.' 7		
   else
-	echo '<p style="color:green">Kernel updated from '$initialKernel '(7 points)</p>' >> $index		
-		imageScore=$[$imageScore+7]
+    recordMiss 'Password Policy'
+  fi
 fi
 }
 
-goodProgram(){ #Check for good programs
-if [ -z "$goodProgram" ]; then :; else posPoints=$[$posPoints+(${#goodProgram[@]} * 10)]
-for i in "${goodProgram[@]}" 
-do
-	if apt-cache policy $i | grep "Installed: (none)" > /dev/null
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Good Program(s) not installed</p>' >> $index;fi
+maxPassAge(){ #Check max password age
+if [ -z "$maxPassAge" ]; then :; else addPosPoints 7
+currentMax=$(cat /etc/login.defs | grep ^PASS_MAX_DAYS | awk '{print $2;}') #Look in login.defs
+  if (( "$currentMax" <= "$maxPassAge" )) ; then
+    recordHit 'Max Password age is '$maxPassAge'.' 7
+  else
+	recordMiss 'Password Age'
+  fi
+fi
+}
+
+minPassAge(){ #Check minimum password age
+if [ -z "$minPassAge" ]; then :; else addPosPoints 7
+currentMin=$(cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}') #find current minimum
+  if (( "$currentMin" < "$minPassAge" )) ; then
+    recordMiss 'Password Policy'
+  else
+    recordHit 'Minimum Password age is at least '$minPassAge'.' 7
+  fi
+fi
+}
+
+recordHit(){ #Use: recordHit <Issue you want highlighted> <Number of points to add>
+echo '<p style="color:green">' $1  '('$2' points)</p>' >> $index
+addScore $2
+}
+
+recordMiss(){ #Use: recordMiss <Issue you want highlighted>
+if [ "$silentMiss" == "y" ]; then :; else
+echo '<p style="color:red">MISS '$1' Issue</p>' >> $index
+fi
+}
+
+recordPenalty(){ #Use: recordPenalty <Issue> <a negative number>
+echo '<p style="color:red">'$1' ('$2' points)</p>' >> $index
+addScore $2
+}
+
+removeAdmin(){ #Check certain uses to see if they have been removed from admin
+if [ -z "$removeAdmin" ]; then :; else addPosPoints ${#removeAdmin[@]}*10
+for i in "${removeAdmin[@]}" ; do
+  if [[ $(getent group sudo | grep $i) ]] ; then #If the user exists in admin group
+      recordMiss Admin 
 	else
-		echo '<p style="color:green">Program' $i 'installed. (10 points)</p>' >> $index
-		imageScore=$[$imageScore+10]
+	  recordHit $i' removed from Admin group.' 10
 	fi
 done
 fi
 }
 
-badProgram(){ #Check for bad programs
-if [ -z "$badProgram" ]; then :; else posPoints=$[$posPoints+(${#badProgram[@]} * 10)]
-for i in "${badProgram[@]}" 
-do
-	if apt-cache policy $i | grep "Installed: (none)" > /dev/null
-	then
-		echo '<p style="color:green">Program' $i 'uninstalled. (10 points)</p>' >> $index
-		imageScore=$[$imageScore+10]
-	else
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Bad program(s) installed</p>' >> $index;fi
-	fi
+secureSudoers(){ #Check /etc/suders for specific text
+if [ -z "$secureSudoers" ]; then :; else  addPosPoints ${#secureSudoers[@]}*8
+for i in "${secureSudoers[@]}" ; do
+  if [[ $(sudo cat /etc/sudoers | grep $i) ]] ; then #If specific text exists in sudoers file
+    recordMiss 'Sudoers'
+  else
+    recordHit '/etc/sudoers file secured.' 8
+  fi
 done
-fi
-}
-
-badFile(){ #Check for bad files
-if [ -z "$badFile" ]; then :; else posPoints=$[$posPoints+(${#badFile[@]} * 10)]
-for i in "${badFile[@]}" 
-do 
-	if [ -e "$i" ]
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Bad File(s)</p>' >> $index;fi
-	else
-		echo '<p style="color:green">' $i 'deleted (10 points)</p>' >> $index
-		imageScore=$[$imageScore+10]
-	fi
-done
-fi
-}
-
-backdoor(){ #Look for process running with the name $backdoor
-if [ -z "$backdoor" ]; then :; else posPoints=$[$posPoints+(${#backdoor[@]} * 10)]
-if pgrep -x nc > /dev/null
-then
-	if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Backdoor not Removed</p>' >> $index ;fi
-else
-	echo '<p style="color:green">'$backdoor' backdoor is not running (10 points)</p>' >> $index
-	imageScore=$[$imageScore+10]		
-fi
-fi
-}
-
-checkHosts(){ #Check for certain words in the hosts file
-if [ -z "$checkHosts" ]; then :; else posPoints=$[$posPoints+(${#checkHosts[@]} * 7)]
-if [[ $(cat /etc/hosts | grep ${checkHosts}) ]]
-	then
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS hosts file issue</p>' >> $index;fi
-	else
-		echo '<p style="color:green">Hosts file corrected (7 points)</p>' >> $index
-		imageScore=$[$imageScore+7]
-fi
-fi
-}
-
-checkCronTab(){ #Check for certain lines in the root crontab
-if [ -z "$checkCronTab" ]; then :; else posPoints=$[$posPoints+(${#checkCronTab[@]} * 10)]
-	for i in "${checkCronTab[@]}" 
-	do
-		if crontab -l -u root | grep $checkCronTab > /dev/null
-		then
-			if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Crontab Issue</p>' >> $index;fi
-		else
-			echo '<p style="color:green">Bad cronjob removed (10 points)</p>' >> $index
-			imageScore=$[$imageScore+10]
-		fi	
-	done
-fi
-}
-
-checkFirewall(){ #Is ufw installed and enabled?
-if [ -z "$checkFirewall" ]; then :; else posPoints=$[$posPoints+(${#checkFirewall[@]} * 10)]
-	if sudo ufw status | grep "Status: active" > /dev/null
-	then
-		echo '<p style="color:green">Firewall is active (10 points)</p>' >> $index
-		imageScore=$[$imageScore+10]
-	else
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Firewall Issue</p>' >> $index;fi
-	fi
-fi
-}
-
-checkForensicsQuestion(){ #Check for the correct answer in the forensics question
-if [ -z "$forensicsAnswer" ]; then :; else posPoints=$[$posPoints+(${#forensicsAnswer[@]} * 10)]
-	if grep -q  "ANSWER: $forensicsAnswer" $forensicsPath
-	then
-			echo '<p style="color:green">Forensics Question answered CORRECT (10 points)</p>' >> $index
-			imageScore=$[$imageScore+10]
-	else
-		if [ "$silentMiss" == "y" ]; then :; else echo '<p style="color:red">MISS Forensics Question is WRONG</p>' >> $index;fi
-	fi
 fi
 }
 
@@ -304,7 +315,11 @@ disableAutoLogin
 minPassAge
 maxPassAge
 maxLoginTries
+checkPassHist
+checkPassLength
+#checkLockoutDur Not implemented yet
 }
+
 programManagement(){
 echo '<H3>PROGRAMS</H3>' >> $index
 goodProgram
@@ -326,6 +341,7 @@ checkForensicsQuestion
 }
 
 #---------------------Main Loop---------------------#
+
 checkForRoot
 checkRelease
 drawHead
