@@ -193,7 +193,7 @@ fi
 
 drawHead(){ #Create the Score Report html 
   echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
-  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.3.1</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
+  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.3.2</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
 }
 
 drawTail(){ #Finish up report (insert score and possible points)
@@ -224,11 +224,21 @@ done
 fi
 }
 
+disableUserGreeter(){
+if [ -z "$disableUserGreeter" ]; then :; else addPosPoints 5
+  if [[ $(cat /etc/lightdm/lightdm.conf | grep greeter-hide-users=true) ]] ; then
+    recordHit 'Show usernames on login greeter is disabled.' 5
+  else
+	  recordMiss 'Greeter'
+  fi
+fi
+}
+
 maxLoginTries(){ #Check max login threshold
 if [ -z "$maxLoginTries" ]; then :; else addPosPoints 7
 currentMax=$(cat /etc/login.defs | grep ^LOGIN_RETRIES | awk '{print $2;}') #Look at login.defs
   if (( "$currentMax" <= "$maxLoginTries" )) ; then
-    recordHit 'Max Login Tries is at least '$maxLoginTries'.' 7		
+    recordHit 'Max Login Tries is at most '$maxLoginTries'.' 7		
   else
     recordMiss 'Password Policy'
   fi
@@ -239,7 +249,7 @@ maxPassAge(){ #Check max password age
 if [ -z "$maxPassAge" ]; then :; else addPosPoints 7
 currentMax=$(cat /etc/login.defs | grep ^PASS_MAX_DAYS | awk '{print $2;}') #Look in login.defs
   if (( "$currentMax" <= "$maxPassAge" )) ; then
-    recordHit 'Max Password age is '$maxPassAge'.' 7
+    recordHit 'Max Password age is at most'$maxPassAge'.' 7
   else
 	recordMiss 'Password Age'
   fi
@@ -312,6 +322,7 @@ securityPolicies(){
 echo '<H3>SECURITY POLICIES</H3>' >> $index
 disableGuest
 disableAutoLogin
+disableUserGreeter
 minPassAge
 maxPassAge
 maxLoginTries
