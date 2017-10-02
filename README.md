@@ -33,7 +33,7 @@ CSEL can be run with "silent misses" which simulates a CyberPatriot round where 
 
 ## How to install
 1. Set up your image and put your vulnerabilities in place.
-2. Download the CSEL.zip to your image and unzip it.
+2. Download the CSEL.zip to your image and unzip it. (or you can use git to clone into the CSEL project: sudo git clone https://github.com/FWSquatch/CSEL.git)
 3. Edit csel.cfg to tell scoring engine what you would like to score.
 4. Run the installer by typing `sudo ./install` in the CSEL directory.
 5. Within 2 minutes you should see a ScoreReport.html file appear.
