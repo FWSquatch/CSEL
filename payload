@@ -171,13 +171,13 @@ if lsb_release -a | grep trusty > /dev/null
 fi
 }
 
-checkStartup() { #Check /etc/rclocal for certain words
+checkStartup() { #Check /etc/rc.local for certain words
 if [ -z "$checkStartup" ]; then :; else addPosPoints ${#checkStartup[@]}*10
 for i in "${checkStartup[@]}" ; do
-  if [[ `grep $i /etc/rclocal` ]] ; then
+  if [[ `grep $i /etc/rc.local` ]] ; then
     recordMiss 'Startup '
   else
-    recordHit $i' removed from /etc/rclocal file.' 7
+    recordHit $i' removed from /etc/rc.local file.' 7
   fi
 done
 fi
@@ -205,7 +205,7 @@ fi
 
 drawHead(){ #Create the Score Report html 
   echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
-  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.3.2</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
+  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.4</H2><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
 }
 
 drawTail(){ #Finish up report (insert score and possible points)
@@ -319,6 +319,28 @@ done
 fi
 }
 
+updatePackListsInt() { #Update package lists interval (should normally be set to 1)
+if [ -z "$updatePackListsInt" ]; then :; else addPosPoints ${#updatePackListsInt[@]}*5
+for i in "${updatePackListsInt[@]}" ; do
+  if [[ `grep -oP '(?<=Update-Package-Lists ").' /etc/apt/apt.conf.d/10periodic` -eq $i ]] ; then
+    recordHit 'Updates set to check every '$i' day(s).' 5
+  else
+    recordMiss 'Updates'
+fi
+done
+fi
+}
+
+updateAutoInstall(){
+if [ -z "$updateAutoInstall" ]; then :; else addPosPoints ${#updateAutoInstall[@]}*5
+  if [[ `grep -oP '(?<=Unattended-Upgrade ").' /etc/apt/apt.conf.d/10periodic` -eq $updateAutoInstall ]] ; then
+    recordHit 'Updates set to auto-install.' 5
+  else
+    recordMiss 'Updates'
+fi
+fi
+}
+
 #---------------------Categories---------------------#
 
 userManagement(){
@@ -360,7 +382,10 @@ backdoor
 checkHosts
 checkCronTab
 checkFirewall
+checkStartup
 checkForensicsQuestion
+updatePackListsInt
+updateAutoInstall
 }
 
 #---------------------Main Loop---------------------#
