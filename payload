@@ -43,7 +43,7 @@ for i in "${badUser[@]}" ; do
   if getent passwd $i > /dev/null 2>&1; then
     recordMiss "User management "
   else
-    recordHit $i" has been deleted." 10
+    recordHit 'User '$i' has been deleted.' 10
   fi
 done
 fi
@@ -168,6 +168,18 @@ if lsb_release -a | grep trusty > /dev/null
     release="trusty"
   else
     release="xenial"
+fi
+}
+
+checkStartup() { #Check /etc/rclocal for certain words
+if [ -z "$checkStartup" ]; then :; else addPosPoints ${#checkStartup[@]}*10
+for i in "${checkStartup[@]}" ; do
+  if [[ `grep $i /etc/rclocal` ]] ; then
+    recordMiss 'Startup '
+  else
+    recordHit $i' removed from /etc/rclocal file.' 7
+  fi
+done
 fi
 }
 

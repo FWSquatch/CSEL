@@ -10,16 +10,20 @@ CSEL is still a baby and it's rough around the edges, but so far it can score th
 - Removing users from the admininstrator group
 - Disabling guest login
 - Disabling autologin
+- Disabling usernames on the login page
 - Setting the minimum password age
 - Setting the maximum password age
 - Setting the maximum number of login tries
+- Securing sudo
 - Installing "good" programs
 - Uninstalling "bad" programs
 - Deleting prohibited files
 - Removing backdoors
+- Securing ssh
 - Configuring the hosts files
 - Updating the kernel
-- Removing things from the crontab (needs improvement--can only do this for root right now)
+- Removing things from the crontab 
+- Removing things from startup
 - Answering the forensics question correctly
 
 CSEL can also take away points for:
