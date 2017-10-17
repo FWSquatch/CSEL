@@ -1,9 +1,5 @@
 #!/bin/bash
 #DO NOT MESS WITH THIS FILE#
-imageScore=0 #Start the score at zero
-posPoints=0 #Start with zero possible points
-release="" #Which version of Ubuntu are we dealing with?
-initialKernel=(%KERNEL%) #This will change every time you run ./install.sh
 
 addPosPoints(){ #Use: posPoints <Number of possible points being added>
 posPoints=$[$posPoints + $1]
@@ -101,6 +97,18 @@ if [ -z "$forensicsAnswer" ]; then :; else addPosPoints ${#forensicsAnswer[@]}*1
     recordHit 'Forensics Question correct.' 10
   else
 	recordMiss 'Forensics Question '
+  fi
+fi
+}
+
+checkKernel(){
+if [ -z "$checkKernel" ]; then :; else addPosPoints 7
+  currentKernel=$(uname -r | awk -F. '{printf($1 "%02d\n", $2) }') #Turn the kernel into a 4 digit number
+  initialKernelFormatted=$(echo $initialKernel | awk -F. '{printf($1 "%02d\n", $2) }') #Turn $initialKernel into a 4 digit number for comparison
+  if (( "$currentKernel" > "$initialKernelFormatted" )) ; then 
+    recordHit 'Kernel Updated' 7
+  else
+    recordMiss 'Kernel'
   fi
 fi
 }
@@ -386,6 +394,7 @@ checkStartup
 checkForensicsQuestion
 updatePackListsInt
 updateAutoInstall
+checkKernel
 }
 
 #---------------------Main Loop---------------------#
