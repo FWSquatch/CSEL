@@ -103,8 +103,8 @@ fi
 
 checkKernel(){
 if [ -z "$checkKernel" ]; then :; else addPosPoints 7
-  currentKernel=$(uname -r | awk -F. '{printf($1 "%02d\n", $2) }') #Turn the kernel into a 4 digit number
-  initialKernelFormatted=$(echo $initialKernel | awk -F. '{printf($1 "%02d\n", $2) }') #Turn $initialKernel into a 4 digit number for comparison
+  currentKernel=$(uname -r | awk -F. '{printf($1 "%02d\n", $2) }')
+  initialKernelFormatted=$(echo $initialKernel | awk -F. '{printf($1 "%02d\n", $2) }')
   if (( "$currentKernel" > "$initialKernelFormatted" )) ; then 
     recordHit 'Kernel Updated' 7
   else
@@ -287,6 +287,18 @@ currentMin=$(cat /etc/login.defs | grep ^PASS_MIN_DAYS | awk '{print $2;}') #fin
 fi
 }
 
+newUser(){
+if [ -z "$newUser" ]; then :; else addPosPoints 5
+for i in "${newUser[@]}" ; do
+  if getent passwd $i > /dev/null 2>&1; then
+    recordHit 'User '$i' has been created.' 5
+  else
+    recordMiss "User management "
+  fi
+done
+fi
+}
+
 recordHit(){ #Use: recordHit <Issue you want highlighted> <Number of points to add>
 echo '<p style="color:green">' $1  '('$2' points)</p>' >> $index
 addScore $2
@@ -355,6 +367,7 @@ userManagement(){
 echo '<H3>USER MANAGEMENT</H3>' >> $index
 goodUser
 badUser
+newUser
 changePassword
 removeAdmin
 secureSudoers
