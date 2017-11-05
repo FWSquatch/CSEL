@@ -22,7 +22,8 @@ CSEL is still a baby and it's rough around the edges, but so far it can score th
 - Securing ssh
 - Configuring the hosts files
 - Updating the kernel
-- Removing things from the crontab 
+- Removing things from user crontabs
+- Updating clamav virus definitions 
 - Removing things from startup
 - Answering the forensics question correctly
 

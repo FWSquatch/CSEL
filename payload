@@ -9,6 +9,40 @@ addScore(){ #Add points to your total score
 imageScore=$[$imageScore + $1]
 }
 
+avUpdated(){ #Check to see that clamav has been updated
+if [ -z "$avUpdated" ]; then :; else addPosPoints ${#avUpdated[@]}*7
+  if [ -e /var/log/clamav/freshclam.log ] ; then
+    avUpdateDate=$(date -d $(grep 'main.cvd is up' /var/log/clamav/freshclam.log | awk '{print $2"-"$3"-"$5}' | tail -1) +%s)
+    echo $avUpdateDate $installDate
+    if (( "$avUpdateDate" >= "$installDate" )) ; then
+      recordHit 'AV has been updated. ' 7
+    else
+      recordMiss 'AV '
+    fi
+  else 
+    recordMiss 'AV '
+  fi
+fi
+}
+
+badCron(){ #Check that bad cronjobs are deleted or commented out.
+if [ -z "$badCron" ]; then :; else echo addPosPoints 7
+if [ -z /var/spool/cron/crontabs/${badCron[0]} ]; then #If user crontab has been deleted
+  recordHit 'Cron job in '${badCron[0]}' disabled.' 7
+else
+  if [[ $(crontab -u ${badCron[0]} -l | grep ^# | grep ${badCron[1]}) ]]; then #If bad line has been commented out
+    recordHit 'Cron job in '${badCron[0]}' disabled.' 7
+  else
+    if [[ $(crontab -u ${badCron[0]} -l | grep ${badCron[1]}) ]]; then
+      recordMiss ' Crontab '
+    else
+      recordHit 'Cron job in '${badCron[0]}' disabled.' 7 #If bad line has been deleted
+    fi
+  fi
+fi
+fi
+}
+
 badFile(){ #Check for bad files
 if [ -z "$badFile" ]; then :; else addPosPoints ${#badFile[@]}*10
 for i in "${badFile[@]}" ; do 
@@ -69,18 +103,6 @@ if [ -z "$changePassword" ]; then :; else addPosPoints ${#changePassword[@]}*5
 fi
 }
 
-checkCronTab(){ #Check for certain lines in the root crontab
-if [ -z "$checkCronTab" ]; then :; else addPosPoints ${#checkCronTab[@]}*10
-for i in "${checkCronTab[@]}" ;	do
-  if crontab -l -u root | grep $i > /dev/null ; then
-    recordMiss 'Crontab '
-  else
-	recordHit $i' removed from crontab.' 10
-  fi	
-done
-fi
-}
-
 checkFirewall(){ #Is ufw installed and enabled?
 if [ -z "$checkFirewall" ]; then :; else addPosPoints 10
   if sudo ufw status | grep "Status: active" > /dev/null ; then
@@ -91,10 +113,20 @@ if [ -z "$checkFirewall" ]; then :; else addPosPoints 10
 fi
 }
 
-checkForensicsQuestion(){ #Check for the correct answer in the forensics question
-if [ -z "$forensicsAnswer" ]; then :; else addPosPoints ${#forensicsAnswer[@]}*10
-  if grep -q  "ANSWER: $forensicsAnswer" $forensicsPath ; then
-    recordHit 'Forensics Question correct.' 10
+checkForensicsQuestion1(){ #Check for the correct answer in the forensics question
+if [ -z "$forensicsAnswer1" ]; then :; else addPosPoints ${#forensicsAnswer1[@]}*10
+  if grep -q  "ANSWER: $forensicsAnswer1" $forensicsPath1 ; then
+    recordHit 'Forensics Question 1 correct.' 10
+  else
+	recordMiss 'Forensics Question '
+  fi
+fi
+}
+
+checkForensicsQuestion2(){ #Check for the correct answer in the forensics question
+if [ -z "$forensicsAnswer2" ]; then :; else addPosPoints ${#forensicsAnswer2[@]}*10
+  if grep -q  "ANSWER: $forensicsAnswer2" $forensicsPath2 ; then
+    recordHit 'Forensics Question 2 correct.' 10
   else
 	recordMiss 'Forensics Question '
   fi
@@ -401,12 +433,13 @@ miscPoints(){
 echo '<H3>MISCELLANEOUS</H3>' >> $index
 backdoor
 checkHosts
-checkCronTab
+badCron
 checkFirewall
 checkStartup
 checkForensicsQuestion
 updatePackListsInt
 updateAutoInstall
+avUpdated
 checkKernel
 }
 
