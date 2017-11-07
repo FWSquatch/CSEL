@@ -13,7 +13,7 @@ avUpdated(){ #Check to see that clamav has been updated
 if [ -z "$avUpdated" ]; then :; else addPosPoints ${#avUpdated[@]}*7
   if [ -e /var/log/clamav/freshclam.log ] ; then
     avUpdateDate=$(date -d $(grep 'main.cvd is up' /var/log/clamav/freshclam.log | awk '{print $2"-"$3"-"$5}' | tail -1) +%s)
-    echo $avUpdateDate $installDate
+    installDate=$(($installDate - 86400))
     if (( "$avUpdateDate" >= "$installDate" )) ; then
       recordHit 'AV has been updated. ' 7
     else
@@ -254,6 +254,79 @@ sed -i "s/#PossiblePoints#/"$posPoints"/g" $index
 echo '<hr><div align="center"><br>Developed by Josh Davis<br><b>Eastern Oklahoma County Technology Center</b><br>Feedback welcome: <a href="mailto:jdavis@eoctech.edu?Subject=CSEL" target="_top">jdavis@eoctech.edu</a></div>' >> $index
 }
 
+fileContainsText1(){
+if [ -z "$fileContainsText1" ]; then :; else addPosPoints ${fileContainsText1[2]}
+if [ -e ${fileContainsText1[0]} ]; then
+  if grep -q "${fileContainsText1[1]}" ${fileContainsText1[0]} ; then
+    echo ${fileContainsText1[0]} ${fileContainsText1[1]} ${fileContainsText1[2]} ${fileContainsText1[3]}
+    if grep  ^[^#] ${fileContainsText1[0]} | grep "${fileContainsText1[1]}" ; then
+      recordHit "${fileContainsText1[3]}" ${fileContainsText1[2]}
+    else
+      recordMiss 'File Configuration '
+    fi
+  else
+    recordMiss 'File Configuration '
+  fi
+else
+recordMiss 'File Configuration '
+fi
+fi
+}
+
+fileContainsText2(){
+if [ -z "$fileContainsText2" ]; then :; else addPosPoints ${fileContainsText2[2]}
+if [ -e ${fileContainsText2[0]} ]; then
+  if grep -q "${fileContainsText2[1]}" ${fileContainsText2[0]} ; then
+    if grep  ^[^#] ${fileContainsText2[0]} | grep "${fileContainsText2[1]}" ; then
+      recordHit "${fileContainsText2[3]}" ${fileContainsText2[2]}
+    else
+      recordMiss 'File Configuration '
+    fi
+  else
+    recordMiss 'File Configuration '
+  fi
+else
+recordMiss 'File Configuration '
+fi
+fi
+}
+
+fileNoLongerContains1(){
+if [ -z "$fileNoLongerContains1" ]; then :; else addPosPoints ${fileNoLongerContains1[2]}
+if [ -e ${fileNoLongerContains1[0]} ]; then
+  if grep -q "${fileNoLongerContains1[1]}" ${fileNoLongerContains1[0]} ; then
+    if grep -q ^[^#] ${fileNoLongerContains1[0]} | grep "${fileNoLongerContains1[1]}" ; then
+      recordMiss 'File Configuration '
+    else
+      recordHit "${fileNoLongerContains1[3]}" ${fileNoLongerContains1[2]}
+    fi
+  else
+    recordHit "${fileNoLongerContains1[3]}" ${fileNoLongerContains1[2]}
+  fi
+else
+  recordHit "${fileNoLongerContains1[3]}" ${fileNoLongerContains1[2]}
+fi
+fi
+}
+
+fileNoLongerContains2(){
+if [ -z "$fileNoLongerContains2" ]; then :; else addPosPoints ${fileNoLongerContains2[2]}
+if [ -e ${fileNoLongerContains2[0]} ]; then
+  if grep -q "${fileNoLongerContains2[1]}" ${fileNoLongerContains2[0]} ; then
+    if grep -q ^[^#] ${fileNoLongerContains2[0]} | grep "${fileNoLongerContains2[1]}" ; then
+      recordMiss 'File Configuration '
+    else
+      recordHit "${fileNoLongerContains2[3]}" ${fileNoLongerContains2[2]}
+    fi
+  else
+    recordHit "${fileNoLongerContains2[3]}" ${fileNoLongerContains2[2]}
+  fi
+else
+  recordHit "${fileNoLongerContains2[3]}" ${fileNoLongerContains2[2]}
+fi
+fi
+}
+
 goodProgram(){ #Check for good programs
 if [ -z "$goodProgram" ]; then :; else addPosPoints ${#goodProgram[@]}*10
 for i in "${goodProgram[@]}" ; do
@@ -441,6 +514,10 @@ updatePackListsInt
 updateAutoInstall
 avUpdated
 checkKernel
+fileContainsText1
+fileContainsText2
+fileNoLongerContains1
+fileNoLongerContains2
 }
 
 #---------------------Main Loop---------------------#
