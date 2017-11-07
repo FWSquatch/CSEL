@@ -6,19 +6,23 @@ CSEL is a scoring engine written in bash for scoring Linux CyberPatriot images. 
 ## Features
 CSEL is still a baby and it's rough around the edges, but so far it can score the following events:
 - Deleting "bad" users
+- Creating new "good" users
 - Changing passwords on accounts
 - Removing users from the admininstrator group
+- Securing /etc/sudoers file
 - Disabling guest login
 - Disabling autologin
 - Disabling usernames on the login page
 - Setting the minimum password age
 - Setting the maximum password age
 - Setting the maximum number of login tries
-- Securing sudo
+- Setting password history value
+- Setting password length
 - Installing "good" programs
 - Uninstalling "bad" programs
 - Deleting prohibited files
 - Removing backdoors
+- Enabling the firewall
 - Securing ssh
 - Configuring the hosts files
 - Updating the kernel
@@ -26,6 +30,9 @@ CSEL is still a baby and it's rough around the edges, but so far it can score th
 - Updating clamav virus definitions 
 - Removing things from startup
 - Answering the forensics question correctly
+- Changing update options
+- Adding or uncommenting lines from config files
+- Deleting or commenting lines from config files
 
 CSEL can also take away points for:
 - Deleting "good" users
