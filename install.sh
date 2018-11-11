@@ -11,7 +11,7 @@ chmod 777 /usr/local/bin/csel_SCORING_ENGINE_DO_NOT_TOUCH #Make it executable
 #Check for crontab entry, add it if it doesn't exist
 echo -e 'DONE\nAdding crontab entry...'
 if [[ $(crontab -l -u root | grep csel) ]] ; then :; else
-  (crontab -l -u root ; echo "*/2 * * * * /usr/local/bin/csel_SCORING_ENGINE_DO_NOT_TOUCH")| crontab -
+  (crontab -l -u root ; echo "* * * * * /usr/local/bin/csel_SCORING_ENGINE_DO_NOT_TOUCH")| crontab -
 fi
 
 #Check for CYBER folder, create if it doesn't exist
