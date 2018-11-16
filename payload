@@ -245,7 +245,7 @@ fi
 
 drawHead(){ #Create the Score Report html 
   echo "<!doctype html><html><head><title>CSEL Score Report</title></head><body>" > $index
-  echo '<table align="center" cellpadding="10"><tr><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.4</H2></div></td><td><img src="/home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
+  echo '<table align="center" cellpadding="10"><tr><td><img src="/etc/CYBERPATRIOT_DO_NOT_REMOVE/logo.png"></td><td><div align="center"><H2>Cyberpatriot Scoring Engine:Linux v0.5</H2></div></td><td><img src="/etc/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png"></td></tr></table><br><H2>Your Score: #TotalScore# out of #PossiblePoints#</H2><hr>' >> $index
 }
 
 drawTail(){ #Finish up report (insert score and possible points)
@@ -509,7 +509,8 @@ checkHosts
 badCron
 checkFirewall
 checkStartup
-checkForensicsQuestion
+checkForensicsQuestion1
+checkForensicsQuestion2
 updatePackListsInt
 updateAutoInstall
 avUpdated
