@@ -11,12 +11,12 @@ chmod 777 /usr/local/bin/csel_SCORING_ENGINE_DO_NOT_TOUCH #Make it executable
 #Check for crontab entry, add it if it doesn't exist
 echo -e 'DONE\nAdding crontab entry...'
 if [[ $(crontab -l -u root | grep csel) ]] ; then :; else
-  (crontab -l -u root ; echo "* * * * * /usr/local/bin/csel_SCORING_ENGINE_DO_NOT_TOUCH")| crontab -
+  (crontab -l -u root ; echo "* * * * * /bin/bash /usr/local/bin/csel_SCORING_ENGINE_DO_NOT_TOUCH")| crontab -
 fi
 
 #Check for CYBER folder, create if it doesn't exist
-echo -e 'DONE\nCreating /home/CYBERPATRIOT directory for icons...'
-if [ ! -d "/home/CYBERPATRIOT_DO_NOT_REMOVE" ]
+echo -e 'DONE\nCreating /etc/CYBERPATRIOT directory for icons...'
+if [ ! -d "/etc/CYBERPATRIOT_DO_NOT_REMOVE" ]
 then
   mkdir /etc/CYBERPATRIOT_DO_NOT_REMOVE
   cp logo.png /etc/CYBERPATRIOT_DO_NOT_REMOVE/logo.png

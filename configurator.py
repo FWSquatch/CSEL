@@ -30,7 +30,7 @@ v04 = Vuln("disableSshRootLogin","0","0","","","","'PermitRootLogin no' exists i
 v05 = Vuln("checkFirewall","0","0","","","","Is ufw enabled?")
 v06 = Vuln("checkKernel","0","0","","","","Has kernel been updated?")
 v07 = Vuln("avUpdated","0","0","","","","Has clamav freshclam been run?")
-v08 = Vuln("NotImplementedYet","0","0","","","","No tip to give...yet")
+v08 = Vuln("silentMiss","0","0","","","","Check this box to hide missed items\n(Similar to competition)")
 v50 = Vuln("goodUser","0","0","","","","Lose points for removing this user (use negative number)")
 v51 = Vuln("badUser","0","0","","","","Remove these users to score")
 v52 = Vuln("goodProgram","0","0","","","","Score points by installing these programs")
@@ -39,9 +39,16 @@ v54 = Vuln("checkStartup","0","0","","","","Check rc.local for a specific string
 v55 = Vuln("checkHosts","0","0","","","","Check /etc/hosts for a specific string (type string in 'keywords')")
 v56 = Vuln("badCron","0","0","","","","Check the root cron for a specific string (type string in 'keywords')")
 v57 = Vuln("badFile","0","0","","","","Score points for deleting this file")
-vulns = [v01,v02,v03,v04,v05,v06,v07,v08,v50,v51,v52,v53,v54,v55,v56,v57]
+v58 = Vuln("minPassAge","0","0","","","","Value of min password age to score (login.defs)")
+v59 = Vuln("maxPassAge","0","0","","","","Value of max password age to score (login.defs)")
+v60 = Vuln("maxLoginTries","0","0","","","","Value of max login retries to score (login.defs)")
+v61 = Vuln("checkPassLength","0","0","","","","Value min pw length (pam.d/common-password)")
+v81 = Vuln("fileContainsText1","0","0","","","","Command has 4 parts: 1-file location 2-text to add or uncomment 3-points to award 4-Success message for score report")
+v82 = Vuln("fileContainsText2","0","0","","","","Command has 4 parts: 1-file location 2-text to add or uncomment 3-points to award 4-Success message for score report")
+v83 = Vuln("fileNoLongerContains1","0","0","","","","Command has 4 parts: 1-file location 2-text to delete or comment 3-points to award 4-Success message for score report")
+v84 = Vuln("fileNoLongerContains2","0","0","","","","Command has 4 parts: 1-file location 2-text to delete or comment 3-points to award 4-Success message for score report")
 
-#saveLoc = "" #Where are we saving the Scoring Report and Forensic Questions?
+vulns = [v01,v02,v03,v04,v05,v06,v07,v08,v50,v51,v52,v53,v54,v55,v56,v57,v58,v59,v60,v61,v81,v82,v83,v84]
 
 def writeToConfig(name,points,enabled,keywords):
         f = open('csel.cfg','a')
@@ -59,19 +66,21 @@ def createForQ():
     qHeader='This is a forensics question. Answer it below\n------------------------\n'
     qFooter='\n\nANSWER: <TypeAnswerHere>'
     f = open('csel.cfg','a')  
-    line1a = 'forensicsAnswer1=('+fqans01.get()+')\n'
-    line1b = 'checkForensicsQuestion1Value=('+str(fqpts01.get())+')\n'
-    line2a = 'forensicsAnswer2=('+fqans02.get()+')\n'
-    line2b = 'checkForensicsQuestion2Value=('+str(fqpts02.get())+')\n'
+    line1a = 'forensicsPath1=('+str(usrDsktp.get())+'Question1.txt)\n'
+    line1b = 'forensicsAnswer1=('+fqans01.get()+')\n'
+    line1c = 'checkForensicsQuestion1Value=('+str(fqpts01.get())+')\n'
+    line2a = 'forensicsPath2=('+str(usrDsktp.get())+'Question2.txt)\n'
+    line2b = 'forensicsAnswer2=('+fqans02.get()+')\n'
+    line2c = 'checkForensicsQuestion2Value=('+str(fqpts02.get())+')\n'
     if fqcb01.get() != 0:
-        f.write(line1a)
-        f.write(line1b)
+        for line in (line1a,line1b,line1c):
+            f.write(line)
         g = open((str(usrDsktp.get())+'Question1.txt'),'w+')
         g.write(qHeader+fquest01.get()+qFooter)
         g.close()
     if fqcb02.get() != 0:
-        f.write(line2a)
-        f.write(line2b)
+        for line in (line2a,line2b,line2c):
+            f.write(line)
         h = open((str(usrDsktp.get())+'Question2.txt'),'w+')
         h.write(qHeader+fquest02.get()+qFooter)
         h.close()
@@ -83,7 +92,6 @@ def submitCallback():
     global checkBoxes
     global vulns
     global pointVal
-    global listVulns
     global keyWords
     f = open('csel.cfg','a')
     for vuln,checkEn,score,key in zip(vulns,checkBoxes,pointVal,keyWords):
@@ -91,10 +99,14 @@ def submitCallback():
         vuln.points = score.get()
         vuln.kw = key.get()
         writeToConfig(vuln.name,vuln.points,vuln.enabled,vuln.kw)
-    configFooter="index=("+usrDsktp.get()+"ScoreReport.html)\n#These values will change during install\nimageScore=0\nposPoints=0\nrelease=\"\"\ninitialKernel=(%KERNEL%)\ninstallDate=(%INSTALLDATE%)"
+    configFooter="index=("+usrDsktp.get()+"ScoreReport.html)\n#These values will change during install\nimageScore=0\nposPoints=0\nrelease=\"\"\ninitialKernel=(%KERNEL%)\ninstallDate=(%INSTALLDATE%)\n"
     f.write(configFooter)
     f.close()
 
+
+def updateScoreLoc():
+        location.config(text=usrDsktp.get())
+        
 f = open('csel.cfg','w+')
 configHeader="#This config file was generated by configurator.py\n\n"
 
@@ -134,7 +146,15 @@ cb54 = IntVar()
 cb55 = IntVar()
 cb56 = IntVar()
 cb57 = IntVar()
-checkBoxes = [cb01,cb02,cb03,cb04,cb05,cb06,cb07,cb08,cb50,cb51,cb52,cb53,cb54,cb55,cb56,cb57]
+cb58 = IntVar()
+cb59 = IntVar()
+cb60 = IntVar()
+cb61 = IntVar()
+cb81 = IntVar()
+cb82 = IntVar()
+cb83 = IntVar()
+cb84 = IntVar()
+checkBoxes = [cb01,cb02,cb03,cb04,cb05,cb06,cb07,cb08,cb50,cb51,cb52,cb53,cb54,cb55,cb56,cb57,cb58,cb59,cb60,cb61,cb81,cb82,cb83,cb84]
 
 #Point values for each item
 pts01 = IntVar()
@@ -153,7 +173,15 @@ pts54 = IntVar()
 pts55 = IntVar()
 pts56 = IntVar()
 pts57 = IntVar()
-pointVal = [pts01,pts02,pts03,pts04,pts05,pts06,pts07,pts08,pts50,pts51,pts52,pts53,pts54,pts55,pts56,pts57]
+pts58 = IntVar()
+pts59 = IntVar()
+pts60 = IntVar()
+pts61 = IntVar()
+pts81 = IntVar()
+pts82 = IntVar()
+pts83 = IntVar()
+pts84 = IntVar()
+pointVal = [pts01,pts02,pts03,pts04,pts05,pts06,pts07,pts08,pts50,pts51,pts52,pts53,pts54,pts55,pts56,pts57,pts58,pts59,pts60,pts61,pts81,pts82,pts83,pts84]
 
 #These are for the keywords that some of the items take (goodUser, badProgram, etc)
 kw01 = StringVar()
@@ -169,13 +197,19 @@ kw51 = StringVar()
 kw52 = StringVar()
 kw53 = StringVar()
 kw54 = StringVar()
+
 kw55 = StringVar()
 kw56 = StringVar()
 kw57 = StringVar()
-keyWords = [kw01,kw02,kw03,kw04,kw05,kw06,kw07,kw08,kw50,kw51,kw52,kw53,kw54,kw55,kw56,kw57]
-
-def updateScoreLoc():
-        location.config(text=usrDsktp.get())
+kw58 = StringVar()
+kw59 = StringVar()
+kw60 = StringVar()
+kw61 = StringVar()
+kw81 = StringVar()
+kw82 = StringVar()
+kw83 = StringVar()
+kw84 = StringVar()
+keyWords = [kw01,kw02,kw03,kw04,kw05,kw06,kw07,kw08,kw50,kw51,kw52,kw53,kw54,kw55,kw56,kw57,kw58,kw59,kw60,kw61,kw81,kw82,kw83,kw84]
 
 root.title('CSEL Setup Tool')
 
@@ -255,22 +289,50 @@ checkbox57 = Checkbutton(root,text=v57.name,variable=cb57)
 points57 = Entry(root,textvariable=pts57)
 keywords57 = Entry(root,textvariable=kw57)
 label57 = Label(root,text=v57.tip)
+checkbox58 = Checkbutton(root,text=v58.name,variable=cb58)
+points58 = Entry(root,textvariable=pts58)
+keywords58 = Entry(root,textvariable=kw58)
+label58 = Label(root,text=v58.tip)
+checkbox59 = Checkbutton(root,text=v59.name,variable=cb59)
+points59 = Entry(root,textvariable=pts59)
+keywords59 = Entry(root,textvariable=kw59)
+label59 = Label(root,text=v59.tip)
+checkbox60 = Checkbutton(root,text=v60.name,variable=cb60)
+points60 = Entry(root,textvariable=pts60)
+keywords60 = Entry(root,textvariable=kw60)
+label60 = Label(root,text=v60.tip)
+checkbox61 = Checkbutton(root,text=v61.name,variable=cb61)
+points61 = Entry(root,textvariable=pts61)
+keywords61 = Entry(root,textvariable=kw61)
+label61 = Label(root,text=v61.tip)
+checkbox81 = Checkbutton(root,text=v81.name,variable=cb81)
+keywords81 = Entry(root,textvariable=kw81)
+label81 = Label(root,text=v81.tip)
+checkbox82 = Checkbutton(root,text=v82.name,variable=cb82)
+keywords82 = Entry(root,textvariable=kw82)
+label82 = Label(root,text=v82.tip)
+checkbox83 = Checkbutton(root,text=v83.name,variable=cb83)
+keywords83 = Entry(root,textvariable=kw83)
+label83 = Label(root,text=v83.tip)
+checkbox84 = Checkbutton(root,text=v84.name,variable=cb84)
+keywords84 = Entry(root,textvariable=kw84)
+label84 = Label(root,text=v84.tip)
 submit = Button(root,text='Write to Config',command=submitCallback)
 
 #Pack it up...errr GRID it up!
 location.grid(row=0,column=1)
 userDesktop.grid(row=0,column=2)
 userDesktopLabel.grid(row=0,column=3,sticky=W)
-userDesktopButton.grid(row=0,column=4)
+userDesktopButton.grid(row=0,column=4,sticky=W)
 fqCheckbox01.grid(row=5,column=1,sticky=W)
 fqPoints01.grid(row=5,column=2)
 fqQuest01.grid(row=5,column=3)
-fqAns01.grid(row=5,column=4) 
+fqAns01.grid(row=5,column=4,sticky=W) 
 fqCheckbox02.grid(row=6,column=1,sticky=W)
 fqPoints02.grid(row=6,column=2)
 fqQuest02.grid(row=6,column=3)
-fqAns02.grid(row=6,column=4) 
-createForQ.grid(row=7,column=4)
+fqAns02.grid(row=6,column=4,sticky=W) 
+createForQ.grid(row=7,column=4,sticky=W)
 
 #Let's make a table!
 head1 = Label(root,text="Score?",font=('Verdana',10,'bold'))
@@ -278,13 +340,13 @@ head2 = Label(root,text="Point Value",font=('Verdana',10,'bold'))
 head3 = Label(root,text="Explanation",font=('Verdana',10,'bold'))
 head4 = Label(root,text="Score?",font=('Verdana',10,'bold'))
 head5 = Label(root,text="Point Value",font=('Verdana',10,'bold'))
-head6 = Label(root,text="Keywords",font=('Verdana',10,'bold'))
+head6 = Label(root,text="Keywords/Values",font=('Verdana',10,'bold'))
 head7 = Label(root,text="Explanation",font=('Verdana',10,'bold'))
 
 fqHead1.grid(row=3,column=1)
 fqHead2.grid(row=3,column=2)
 fqHead3.grid(row=3,column=3)
-fqHead4.grid(row=3,column=4)
+fqHead4.grid(row=3,column=4,sticky=W)
 head1.grid(row=10,column=1)
 head2.grid(row=10,column=2)
 head3.grid(row=10,column=3)
@@ -313,9 +375,9 @@ label06.grid(row=16,column=3,sticky=W)
 checkbox07.grid(row=17,column=1,sticky=W)
 points07.grid(row=17,column=2)
 label07.grid(row=17,column=3,sticky=W)
-checkbox08.grid(row=18,column=1,sticky=W)
-points08.grid(row=18,column=2)
-label08.grid(row=18,column=3,sticky=W)
+checkbox08.grid(row=1,column=1,sticky=W)
+#points08.grid(row=18,column=2)
+label08.grid(row=1,column=2,sticky=W)
 checkbox50.grid(row=50,column=1,sticky=W)
 points50.grid(row=50,column=2)
 keywords50.grid(row=50,column=3)
@@ -348,6 +410,34 @@ checkbox57.grid(row=57,column=1,sticky=W)
 points57.grid(row=57,column=2)
 keywords57.grid(row=57,column=3)
 label57.grid(row=57,column=4,sticky=W)
+checkbox58.grid(row=58,column=1,sticky=W)
+points58.grid(row=58,column=2)
+keywords58.grid(row=58,column=3)
+label58.grid(row=58,column=4,sticky=W)
+checkbox59.grid(row=59,column=1,sticky=W)
+points59.grid(row=59,column=2)
+keywords59.grid(row=59,column=3)
+label59.grid(row=59,column=4,sticky=W)
+checkbox60.grid(row=60,column=1,sticky=W)
+points60.grid(row=60,column=2)
+keywords60.grid(row=60,column=3)
+label60.grid(row=60,column=4,sticky=W)
+checkbox61.grid(row=61,column=1,sticky=W)
+points61.grid(row=61,column=2)
+keywords61.grid(row=61,column=3)
+label61.grid(row=61,column=4,sticky=W)
+checkbox81.grid(row=81,column=1,sticky=W)
+keywords81.grid(row=81,column=2)
+label81.grid(row=81,column=3,columnspan=2,sticky=W)
+checkbox82.grid(row=82,column=1,sticky=W)
+keywords82.grid(row=82,column=2)
+label82.grid(row=82,column=3,columnspan=2,sticky=W)
+checkbox83.grid(row=83,column=1,sticky=W)
+keywords83.grid(row=83,column=2)
+label83.grid(row=83,column=3,columnspan=2,sticky=W)
+checkbox84.grid(row=84,column=1,sticky=W)
+keywords84.grid(row=84,column=2)
+label84.grid(row=84,column=3,columnspan=2,sticky=W)
 submit.grid(row=99,column=3)
 
 root.mainloop()
