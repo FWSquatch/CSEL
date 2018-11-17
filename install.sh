@@ -18,9 +18,9 @@ fi
 echo -e 'DONE\nCreating /home/CYBERPATRIOT directory for icons...'
 if [ ! -d "/home/CYBERPATRIOT_DO_NOT_REMOVE" ]
 then
-  mkdir /home/CYBERPATRIOT_DO_NOT_REMOVE
-  cp logo.png /home/CYBERPATRIOT_DO_NOT_REMOVE/logo.png
-  cp iguana.png /home/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png
+  mkdir /etc/CYBERPATRIOT_DO_NOT_REMOVE
+  cp logo.png /etc/CYBERPATRIOT_DO_NOT_REMOVE/logo.png
+  cp iguana.png /etc/CYBERPATRIOT_DO_NOT_REMOVE/iguana.png
 fi
 
 #Fire csel to create the initial Score Report
