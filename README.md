@@ -3,6 +3,9 @@
 
 CSEL is a scoring engine written in bash for scoring Linux CyberPatriot images. It is configured by adding scoring options into the csel.cfg and running the install file. It now includes a web page Score Report. It works (to varying degrees) with Ubuntu 14.04 and 16.04.
 
+## Important Update
+CSEL has been rewritten in python as PySEL. Try it out here: [PySEL Repo](https://github.com/FWSquatch/pysel)
+
 ## Features
 CSEL is still a baby and it's rough around the edges, but so far it can score the following events:
 - Deleting "bad" users
